@@ -23,7 +23,7 @@ export const Messages = {
   
   // Course
   COURSE_NOT_FOUND: 'Course not found',
-  COURSE_NOT_FOUND_DESC: 'Please go back and select a course again.',
+  COURSE_NOT_FOUND_DESC: 'The course you are looking for does not exist.',
   COURSE_LOADING: 'Loading course data...',
   
   // Admin

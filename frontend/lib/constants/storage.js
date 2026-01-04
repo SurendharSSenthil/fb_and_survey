@@ -8,3 +8,6 @@ export const STORAGE_KEYS = {
   COURSE_DATA: (courseId) => `course_${courseId}`
 }
 
+// For backward compatibility
+Object.freeze(STORAGE_KEYS)
+

@@ -107,6 +107,114 @@ a {
   .ant-layout-content {
     padding: 8px !important;
   }
+
+  /* Table responsiveness */
+  .ant-table {
+    font-size: 12px !important;
+  }
+
+  .ant-table-thead > tr > th {
+    padding: 8px 4px !important;
+    font-size: 12px !important;
+  }
+
+  .ant-table-tbody > tr > td {
+    padding: 8px 4px !important;
+    font-size: 12px !important;
+  }
+
+  /* Form elements */
+  .ant-input, .ant-select-selector {
+    font-size: 14px !important;
+  }
+
+  .ant-form-item-label > label {
+    font-size: 13px !important;
+  }
+
+  /* Statistics */
+  .ant-statistic-title {
+    font-size: 12px !important;
+  }
+
+  .ant-statistic-content {
+    font-size: 16px !important;
+  }
+
+  /* Modal responsiveness */
+  .ant-modal {
+    margin: 8px !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+
+  .ant-modal-body {
+    padding: 16px !important;
+  }
+
+  /* Typography adjustments */
+  h1, h2, h3, h4, h5, h6 {
+    margin-bottom: 8px !important;
+  }
+
+  .ant-typography {
+    font-size: 14px !important;
+  }
+
+  /* Button groups */
+  .ant-space-item {
+    margin-bottom: 4px !important;
+  }
+
+  /* Radio buttons */
+  .ant-radio-wrapper {
+    font-size: 13px !important;
+    padding: 4px 0 !important;
+  }
+
+  /* Alert messages */
+  .ant-alert {
+    margin-bottom: 8px !important;
+  }
+
+  .ant-alert-message {
+    font-size: 13px !important;
+  }
+
+  .ant-alert-description {
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra small mobile adjustments */
+  .ant-layout-header {
+    padding: 0 4px !important;
+    min-height: 48px !important;
+  }
+
+  .ant-card-body {
+    padding: 8px !important;
+  }
+
+  .ant-btn {
+    font-size: 12px !important;
+    height: auto !important;
+    padding: 4px 8px !important;
+  }
+
+  .ant-table-thead > tr > th,
+  .ant-table-tbody > tr > td {
+    padding: 4px 2px !important;
+    font-size: 11px !important;
+  }
+
+  .ant-statistic-content {
+    font-size: 14px !important;
+  }
+
+  .ant-input, .ant-select-selector {
+    font-size: 13px !important;
+  }
 }
 
 @media (min-width: 769px) {

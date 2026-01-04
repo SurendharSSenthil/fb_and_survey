@@ -8,6 +8,8 @@ import api from '../../lib/api'
 import { getStudentSession } from '../../lib/utils'
 import { LikertLabels } from '../../lib/constants'
 import { STANDARD_FEEDBACK_QUESTIONS } from '../../lib/standardFeedbackQuestions'
+import AppLayout from '../../components/AppLayout'
+import ResponsiveLayout from '../../components/ResponsiveLayout'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
@@ -97,114 +99,120 @@ export default function FeedbackPage () {
 
   if (loading) {
     return (
-      <div className='student-content' style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
-        <Card>
-          <div style={{ textAlign: 'center', padding: '40px' }}>
-            <Spin size='large' />
-            <div style={{ marginTop: 16 }}>
-              <Text type='secondary'>Loading feedback form...</Text>
+      <AppLayout>
+        <ResponsiveLayout maxWidth="800px">
+          <Card>
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <Spin size='large' />
+              <div style={{ marginTop: 16 }}>
+                <Text type='secondary'>Loading feedback form...</Text>
+              </div>
             </div>
-          </div>
-        </Card>
-      </div>
+          </Card>
+        </ResponsiveLayout>
+      </AppLayout>
     )
   }
 
   if (!course) {
     return (
-      <div className='student-content' style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
-        <Card>
-          <Alert
-            message='Course not found'
-            description='Please go back and select a course again.'
-            type='error'
-            action={
-              <Button onClick={() => router.push('/student')}>
-                Go Back
-              </Button>
-            }
-          />
-        </Card>
-      </div>
+      <AppLayout>
+        <ResponsiveLayout maxWidth="800px">
+          <Card>
+            <Alert
+              message='Course not found'
+              description='Please go back and select a course again.'
+              type='error'
+              action={
+                <Button onClick={() => router.push('/student')}>
+                  Go Back
+                </Button>
+              }
+            />
+          </Card>
+        </ResponsiveLayout>
+      </AppLayout>
     )
   }
 
   return (
-    <div className='student-content' style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
-      <Card style={{ marginBottom: 12 }}>
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={() => router.push('/student')}
-          style={{ marginBottom: 12 }}
-        >
-          Back to Courses
-        </Button>
-        <Title level={2} style={{ margin: 0, fontSize: '18px' }}>
-          {course.courseCode} - {course.courseName}
-        </Title>
-        <Text type='secondary' style={{ fontSize: '13px' }}>Feedback Questions</Text>
-      </Card>
-
-      {error && (
-        <Alert
-          message={error}
-          type='error'
-          closable
-          onClose={() => setError(null)}
-          style={{ marginBottom: 12 }}
-        />
-      )}
-
-      <Card>
-        <Space direction='vertical' style={{ width: '100%' }} size='middle'>
-          {STANDARD_FEEDBACK_QUESTIONS.map((question, index) => (
-            <Card key={question.questionId} size='small' style={{ background: '#fafafa' }}>
-              <Text strong style={{ fontSize: '15px' }}>
-                {index + 1}. {question.text}
-              </Text>
-              <Radio.Group
-                style={{ width: '100%', marginTop: 12 }}
-                value={answers[question.questionId]}
-                onChange={(e) => setAnswers({
-                  ...answers,
-                  [question.questionId]: e.target.value
-                })}
-              >
-                <Space direction='vertical' style={{ width: '100%' }}>
-                  {Object.entries(LikertLabels).map(([value, label]) => (
-                    <Radio key={value} value={parseInt(value)} style={{ display: 'block', padding: '4px 0' }}>
-                      {label}
-                    </Radio>
-                  ))}
-                </Space>
-              </Radio.Group>
-            </Card>
-          ))}
-        </Space>
-
-        <div style={{ marginTop: 16, marginBottom: 16 }}>
-          <Title level={5} style={{ marginBottom: 8, fontSize: '14px' }}>
-            Additional Recommendations (Optional)
+    <AppLayout>
+      <ResponsiveLayout maxWidth="800px">
+        <Card style={{ marginBottom: 16 }}>
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={() => router.push('/student')}
+            style={{ marginBottom: 12 }}
+          >
+            Back to Courses
+          </Button>
+          <Title level={2} style={{ margin: 0, fontSize: '18px' }}>
+            {course.courseCode} - {course.courseName}
           </Title>
-          <TextArea
-            rows={4}
-            value={recommendation}
-            onChange={(e) => setRecommendation(e.target.value)}
-            placeholder='Enter your recommendations or feedback...'
-            style={{ fontSize: '14px' }}
-          />
-        </div>
+          <Text type='secondary' style={{ fontSize: '13px' }}>Feedback Questions</Text>
+        </Card>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-          <Button onClick={() => router.push('/student')}>
-            Cancel
-          </Button>
-          <Button type='primary' onClick={handleSubmit} loading={submitting} size='large'>
-            Submit Feedback
-          </Button>
-        </div>
-      </Card>
-    </div>
+        {error && (
+          <Alert
+            message={error}
+            type='error'
+            closable
+            onClose={() => setError(null)}
+            style={{ marginBottom: 16 }}
+          />
+        )}
+
+        <Card>
+          <Space direction='vertical' style={{ width: '100%' }} size='middle'>
+            {STANDARD_FEEDBACK_QUESTIONS.map((question, index) => (
+              <Card key={question.questionId} size='small' style={{ background: '#fafafa' }}>
+                <Text strong style={{ fontSize: '15px' }}>
+                  {index + 1}. {question.text}
+                </Text>
+                <Radio.Group
+                  style={{ width: '100%', marginTop: 12 }}
+                  value={answers[question.questionId]}
+                  onChange={(e) => setAnswers({
+                    ...answers,
+                    [question.questionId]: e.target.value
+                  })}
+                >
+                  <Space direction='vertical' style={{ width: '100%' }}>
+                    {Object.entries(LikertLabels).map(([value, label]) => (
+                      <Radio key={value} value={parseInt(value)} style={{ display: 'block', padding: '4px 0' }}>
+                        {label}
+                      </Radio>
+                    ))}
+                  </Space>
+                </Radio.Group>
+              </Card>
+            ))}
+          </Space>
+
+          <div style={{ marginTop: 16, marginBottom: 16 }}>
+            <Title level={5} style={{ marginBottom: 8, fontSize: '14px' }}>
+              Additional Recommendations (Optional)
+            </Title>
+            <TextArea
+              rows={4}
+              value={recommendation}
+              onChange={(e) => setRecommendation(e.target.value)}
+              placeholder='Enter your recommendations or feedback...'
+              style={{ fontSize: '14px' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+            <Button onClick={() => router.push('/student')}>
+              Cancel
+            </Button>
+            <Button type='primary' onClick={handleSubmit} loading={submitting} size='large'>
+              Submit Feedback
+            </Button>
+          </div>
+        </Card>
+      </ResponsiveLayout>
+    </AppLayout>
   )
 }
 

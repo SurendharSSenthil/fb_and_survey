@@ -8,6 +8,7 @@ export * from './storage.js'
 export * from './status.js'
 export * from './messages.js'
 export * from './ui.js'
+export * from './feedbackCategories.js'
 
 // Re-export existing constants
 export { LikertScale, LikertLabels, STUDENT_ID_EXPIRY_MS } from '../constants.js'
