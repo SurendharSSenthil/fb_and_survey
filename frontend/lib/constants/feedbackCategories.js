@@ -27,10 +27,10 @@ export const FEEDBACK_CATEGORIES = [
 
 /**
  * Convert Likert scale (1-5) to percentage (0-100)
- * 1 = 0%, 2 = 25%, 3 = 50%, 4 = 75%, 5 = 100%
+ * 1 = 20%, 2 = 40%, 3 = 60%, 4 = 80%, 5 = 100%
  */
 export const likertToPercentage = (value) => {
-  return ((value - 1) / 4) * 100
+  return value * 20
 }
 
 /**
@@ -39,5 +39,12 @@ export const likertToPercentage = (value) => {
  */
 export const getCOLabel = (index) => {
   return `CO${index + 1}`
+}
+
+/**
+ * Calculate number of students who scored above 60% (scores 3, 4, 5)
+ */
+export const getStudentsAbove60 = (distribution) => {
+  return (distribution[3] || 0) + (distribution[4] || 0) + (distribution[5] || 0)
 }
 

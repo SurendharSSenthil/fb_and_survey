@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Card, Button, Space, Typography, Alert, Spin, Row, Col, Statistic, Divider, Table } from 'antd'
-import { ArrowLeftOutlined, DownloadOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, DownloadOutlined, LogoutOutlined } from '@ant-design/icons'
 import api from '../../../lib/api'
 import { LikertLabels } from '../../../lib/constants'
-import { Routes, API_ENDPOINTS, STORAGE_KEYS, Messages, UI, FEEDBACK_CATEGORIES, likertToPercentage, getCOLabel } from '../../../lib/constants/index.js'
+import { Routes, API_ENDPOINTS, STORAGE_KEYS, Messages, UI, FEEDBACK_CATEGORIES, likertToPercentage, getCOLabel, getStudentsAbove60 } from '../../../lib/constants/index.js'
+import AppLayout from '../../../components/AppLayout'
+import ResponsiveLayout from '../../../components/ResponsiveLayout'
 
 const { Title, Text } = Typography
 
@@ -48,6 +50,11 @@ export default function CourseDetailPage () {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem(STORAGE_KEYS.ADMIN_TOKEN)
+    router.push(Routes.ADMIN)
   }
 
   const handleDownloadSurveySamples = async () => {
@@ -144,6 +151,7 @@ export default function CourseDetailPage () {
     
     return Object.entries(courseData.survey.questionStats).map(([qId, stats], index) => {
       const percentage = likertToPercentage(stats.average)
+      const studentsAbove60 = getStudentsAbove60(stats.distribution)
       return {
         key: qId,
         question: stats.questionText,
@@ -151,6 +159,7 @@ export default function CourseDetailPage () {
         average: stats.average.toFixed(2),
         percentage: percentage.toFixed(2),
         responses: stats.count,
+        studentsAbove60,
         distribution: stats.distribution
       }
     })
@@ -188,36 +197,48 @@ export default function CourseDetailPage () {
       title: 'Question',
       dataIndex: 'question',
       key: 'question',
-      width: '40%',
+      width: '35%',
       ellipsis: true
     },
     {
       title: 'CO',
       dataIndex: 'co',
       key: 'co',
-      width: '10%',
+      width: '8%',
       align: 'center'
     },
     {
       title: 'Average (1-5)',
       dataIndex: 'average',
       key: 'average',
-      width: '15%',
+      width: '12%',
       align: 'center'
     },
     {
       title: 'Mark (out of 100)',
       dataIndex: 'percentage',
       key: 'percentage',
-      width: '15%',
+      width: '12%',
       align: 'center',
       render: (value) => <Text strong>{value}%</Text>
     },
     {
-      title: 'Responses',
+      title: 'Students >60%',
+      dataIndex: 'studentsAbove60',
+      key: 'studentsAbove60',
+      width: '12%',
+      align: 'center',
+      render: (value, record) => (
+        <Text style={{ color: value > 0 ? '#52c41a' : '#ff4d4f' }}>
+          {value}/{record.responses}
+        </Text>
+      )
+    },
+    {
+      title: 'Total Responses',
       dataIndex: 'responses',
       key: 'responses',
-      width: '10%',
+      width: '11%',
       align: 'center'
     }
   ]
@@ -298,196 +319,213 @@ export default function CourseDetailPage () {
   const feedbackCategoryData = getFeedbackCategoryData()
 
   return (
-    <div className='student-content' style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', minHeight: '100vh', background: UI.COLORS.BACKGROUND }}>
-      <Card style={{ marginBottom: 12 }}>
-        <Space direction='vertical' style={{ width: '100%' }} size='middle'>
-          <Button
-            icon={<ArrowLeftOutlined />}
-            onClick={() => router.push(Routes.ADMIN)}
-          >
-            Back to Admin
-          </Button>
-          <div>
-            <Title level={2} style={{ margin: 0 }}>
-              {courseData.courseCode} - {courseData.courseName}
-            </Title>
-          </div>
-          <Row gutter={16}>
-            <Col xs={24} sm={12}>
-              <Statistic
-                title='Survey Submissions'
-                value={courseData.survey.totalResponses}
-              />
-            </Col>
-            <Col xs={24} sm={12}>
-              <Statistic
-                title='Feedback Submissions'
-                value={courseData.feedback.totalResponses}
-              />
-            </Col>
-          </Row>
-          <Space>
-            <Button
-              type='primary'
-              icon={<DownloadOutlined />}
-              onClick={handleDownloadSurveySamples}
-              loading={downloadingSurvey}
-            >
-              Download Survey Samples
-            </Button>
-            <Button
-              type='primary'
-              icon={<DownloadOutlined />}
-              onClick={handleDownloadFeedbackSamples}
-              loading={downloadingFeedback}
-            >
-              Download Feedback Samples
-            </Button>
-          </Space>
-        </Space>
-      </Card>
-
-      {error && (
-        <Alert
-          message={error}
-          type='error'
-          closable
-          onClose={() => setError(null)}
-          style={{ marginBottom: 16 }}
-        />
-      )}
-
-      {/* Survey Statistics Table */}
-      {surveyTableData.length > 0 && (
-        <Card title='Survey Questions - Course Outcomes Analysis' style={{ marginBottom: 16 }}>
-          <Table
-            columns={surveyColumns}
-            dataSource={surveyTableData}
-            pagination={false}
-            size='middle'
-            scroll={{ x: true }}
-          />
-          <Divider />
-          <Row gutter={16}>
-            <Col span={8}>
-              <Statistic
-                title='Total Questions'
-                value={surveyTableData.length}
-              />
-            </Col>
-            <Col span={8}>
-              <Statistic
-                title='Overall Average'
-                value={surveyTableData.reduce((sum, row) => sum + parseFloat(row.average), 0) / surveyTableData.length}
-                precision={2}
-              />
-            </Col>
-            <Col span={8}>
-              <Statistic
-                title='Overall Percentage'
-                value={surveyTableData.reduce((sum, row) => sum + parseFloat(row.percentage), 0) / surveyTableData.length}
-                precision={2}
-                suffix='%'
-              />
-            </Col>
-          </Row>
-        </Card>
-      )}
-
-      {/* Feedback Category Statistics Table */}
-      {feedbackCategoryData.length > 0 && (
-        <Card title='Feedback Questions - Category Analysis' style={{ marginBottom: 16 }}>
-          <Table
-            columns={feedbackCategoryColumns}
-            dataSource={feedbackCategoryData}
-            pagination={false}
-            size='middle'
-            scroll={{ x: true }}
-          />
-          <Divider />
-          <Row gutter={16}>
-            <Col span={6}>
-              <Statistic
-                title='Total Categories'
-                value={feedbackCategoryData.length}
-              />
-            </Col>
-            <Col span={6}>
-              <Statistic
-                title='Overall Average'
-                value={feedbackCategoryData.reduce((sum, row) => sum + parseFloat(row.average), 0) / feedbackCategoryData.length}
-                precision={2}
-              />
-            </Col>
-            <Col span={6}>
-              <Statistic
-                title='Overall Percentage'
-                value={feedbackCategoryData.reduce((sum, row) => sum + parseFloat(row.percentage), 0) / feedbackCategoryData.length}
-                precision={2}
-                suffix='%'
-              />
-            </Col>
-            <Col span={6}>
-              <Statistic
-                title='Total Responses'
-                value={feedbackCategoryData.reduce((sum, row) => sum + row.responses, 0)}
-              />
-            </Col>
-          </Row>
-        </Card>
-      )}
-
-      {/* Detailed Feedback Question Statistics (Collapsible) */}
-      {Object.keys(courseData.feedback.questionStats).length > 0 && (
-        <Card title='Detailed Feedback Question Statistics' style={{ marginBottom: 16 }}>
+    <AppLayout 
+      showHeader={true}
+      showFooter={true}
+      headerContent={
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <Title level={3} style={{ color: '#fff', margin: 0 }}>
+            Admin Dashboard
+          </Title>
+          <Button icon={<LogoutOutlined />} onClick={handleLogout}>Logout</Button>
+        </div>
+      }
+    >
+      <ResponsiveLayout maxWidth={UI.LAYOUT.MAX_WIDTH.WIDE}>
+        <Card style={{ marginBottom: 16 }}>
           <Space direction='vertical' style={{ width: '100%' }} size='middle'>
-            {FEEDBACK_CATEGORIES.map(category => {
-              const categoryQuestions = category.questions
-                .map(qId => {
-                  const stats = courseData.feedback.questionStats[qId]
-                  return stats ? { questionId: qId, ...stats } : null
-                })
-                .filter(Boolean)
-              
-              if (categoryQuestions.length === 0) return null
-              
-              return (
-                <Card key={category.id} size='small' style={{ background: '#fafafa' }}>
-                  <Title level={5} style={{ marginBottom: 12 }}>{category.name}</Title>
-                  <Space direction='vertical' style={{ width: '100%' }} size='small'>
-                    {categoryQuestions.map((stats, index) => (
-                      <div key={stats.questionId} style={{ padding: '8px 0', borderBottom: index < categoryQuestions.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
-                        <Row gutter={16} align='middle'>
-                          <Col span={14}>
-                            <Text strong style={{ fontSize: '13px' }}>{stats.questionText}</Text>
-                          </Col>
-                          <Col span={5}>
-                            <Statistic
-                              title='Average'
-                              value={stats.average}
-                              precision={2}
-                              valueStyle={{ fontSize: '14px' }}
-                            />
-                          </Col>
-                          <Col span={5}>
-                            <Statistic
-                              title='Percentage'
-                              value={likertToPercentage(stats.average)}
-                              precision={2}
-                              suffix='%'
-                              valueStyle={{ fontSize: '14px', color: '#1890ff' }}
-                            />
-                          </Col>
-                        </Row>
-                      </div>
-                    ))}
-                  </Space>
-                </Card>
-              )
-            })}
+            <Button
+              icon={<ArrowLeftOutlined />}
+              onClick={() => router.push(Routes.ADMIN)}
+            >
+              Back to Admin
+            </Button>
+            <div>
+              <Title level={2} style={{ margin: 0 }}>
+                {courseData.courseCode} - {courseData.courseName}
+              </Title>
+            </div>
+            <Row gutter={16}>
+              <Col xs={24} sm={12}>
+                <Statistic
+                  title='Survey Submissions'
+                  value={courseData.survey.totalResponses}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <Statistic
+                  title='Feedback Submissions'
+                  value={courseData.feedback.totalResponses}
+                />
+              </Col>
+            </Row>
+            <Space wrap>
+              <Button
+                type='primary'
+                icon={<DownloadOutlined />}
+                onClick={handleDownloadSurveySamples}
+                loading={downloadingSurvey}
+              >
+                Download Survey Samples
+              </Button>
+              <Button
+                type='primary'
+                icon={<DownloadOutlined />}
+                onClick={handleDownloadFeedbackSamples}
+                loading={downloadingFeedback}
+              >
+                Download Feedback Samples
+              </Button>
+            </Space>
           </Space>
         </Card>
-      )}
-    </div>
+
+        {error && (
+          <Alert
+            message={error}
+            type='error'
+            closable
+            onClose={() => setError(null)}
+            style={{ marginBottom: 16 }}
+          />
+        )}
+
+        {/* Survey Statistics Table */}
+        {surveyTableData.length > 0 && (
+          <Card title='Survey Questions - Course Outcomes Analysis' style={{ marginBottom: 16 }}>
+            <div style={{ overflowX: 'auto' }}>
+              <Table
+                columns={surveyColumns}
+                dataSource={surveyTableData}
+                pagination={false}
+                size='middle'
+                scroll={{ x: 800 }}
+              />
+            </div>
+            <Divider />
+            <Row gutter={16}>
+              <Col xs={24} sm={8}>
+                <Statistic
+                  title='Total Questions'
+                  value={surveyTableData.length}
+                />
+              </Col>
+              <Col xs={24} sm={8}>
+                <Statistic
+                  title='Overall Average'
+                  value={surveyTableData.reduce((sum, row) => sum + parseFloat(row.average), 0) / surveyTableData.length}
+                  precision={2}
+                />
+              </Col>
+              <Col xs={24} sm={8}>
+                <Statistic
+                  title='Overall Percentage'
+                  value={surveyTableData.reduce((sum, row) => sum + parseFloat(row.percentage), 0) / surveyTableData.length}
+                  precision={2}
+                  suffix='%'
+                />
+              </Col>
+            </Row>
+          </Card>
+        )}
+
+        {/* Feedback Category Statistics Table */}
+        {feedbackCategoryData.length > 0 && (
+          <Card title='Feedback Questions - Category Analysis' style={{ marginBottom: 16 }}>
+            <div style={{ overflowX: 'auto' }}>
+              <Table
+                columns={feedbackCategoryColumns}
+                dataSource={feedbackCategoryData}
+                pagination={false}
+                size='middle'
+                scroll={{ x: 800 }}
+              />
+            </div>
+            <Divider />
+            <Row gutter={16}>
+              <Col xs={24} sm={6}>
+                <Statistic
+                  title='Total Categories'
+                  value={feedbackCategoryData.length}
+                />
+              </Col>
+              <Col xs={24} sm={6}>
+                <Statistic
+                  title='Overall Average'
+                  value={feedbackCategoryData.reduce((sum, row) => sum + parseFloat(row.average), 0) / feedbackCategoryData.length}
+                  precision={2}
+                />
+              </Col>
+              <Col xs={24} sm={6}>
+                <Statistic
+                  title='Overall Percentage'
+                  value={feedbackCategoryData.reduce((sum, row) => sum + parseFloat(row.percentage), 0) / feedbackCategoryData.length}
+                  precision={2}
+                  suffix='%'
+                />
+              </Col>
+              <Col xs={24} sm={6}>
+                <Statistic
+                  title='Total Responses'
+                  value={feedbackCategoryData.reduce((sum, row) => sum + row.responses, 0)}
+                />
+              </Col>
+            </Row>
+          </Card>
+        )}
+
+        {/* Detailed Feedback Question Statistics (Collapsible) */}
+        {Object.keys(courseData.feedback.questionStats).length > 0 && (
+          <Card title='Detailed Feedback Question Statistics' style={{ marginBottom: 16 }}>
+            <Space direction='vertical' style={{ width: '100%' }} size='middle'>
+              {FEEDBACK_CATEGORIES.map(category => {
+                const categoryQuestions = category.questions
+                  .map(qId => {
+                    const stats = courseData.feedback.questionStats[qId]
+                    return stats ? { questionId: qId, ...stats } : null
+                  })
+                  .filter(Boolean)
+                
+                if (categoryQuestions.length === 0) return null
+                
+                return (
+                  <Card key={category.id} size='small' style={{ background: '#fafafa' }}>
+                    <Title level={5} style={{ marginBottom: 12 }}>{category.name}</Title>
+                    <Space direction='vertical' style={{ width: '100%' }} size='small'>
+                      {categoryQuestions.map((stats, index) => (
+                        <div key={stats.questionId} style={{ padding: '8px 0', borderBottom: index < categoryQuestions.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
+                          <Row gutter={16} align='middle'>
+                            <Col xs={24} sm={14}>
+                              <Text strong style={{ fontSize: '13px' }}>{stats.questionText}</Text>
+                            </Col>
+                            <Col xs={12} sm={5}>
+                              <Statistic
+                                title='Average'
+                                value={stats.average}
+                                precision={2}
+                                valueStyle={{ fontSize: '14px' }}
+                              />
+                            </Col>
+                            <Col xs={12} sm={5}>
+                              <Statistic
+                                title='Percentage'
+                                value={likertToPercentage(stats.average)}
+                                precision={2}
+                                suffix='%'
+                                valueStyle={{ fontSize: '14px', color: '#1890ff' }}
+                              />
+                            </Col>
+                          </Row>
+                        </div>
+                      ))}
+                    </Space>
+                  </Card>
+                )
+              })}
+            </Space>
+          </Card>
+        )}
+      </ResponsiveLayout>
+    </AppLayout>
   )
 }
