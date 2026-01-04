@@ -8,6 +8,7 @@ import SurveyResponse from '../models/SurveyResponse.js'
 import FeedbackResponse from '../models/FeedbackResponse.js'
 import { authenticateAdmin } from '../middleware/auth.js'
 import { JWT_SECRET } from '../constants/index.js'
+import { STANDARD_FEEDBACK_QUESTIONS } from '../constants/feedbackQuestions.js'
 import logger from '../utils/logger.js'
 
 const router = express.Router()
@@ -151,7 +152,11 @@ router.post('/admin/course', authenticateAdmin, async (req, res, next) => {
       feedbackQuestions,
       isActive
     } = req.body
-
+    console.log(courseCode,
+      courseName,
+      deptCode,
+      semester,
+      year, req.body)
     if (!courseCode || !courseName || !deptCode || !semester || !year) {
       return res.status(400).json({
         success: false,
@@ -175,7 +180,7 @@ router.post('/admin/course', authenticateAdmin, async (req, res, next) => {
       semester: parseInt(semester),
       year: parseInt(year),
       surveyQuestions: surveyQuestions || [],
-      feedbackQuestions: feedbackQuestions || [],
+      feedbackQuestions: STANDARD_FEEDBACK_QUESTIONS, // Always use standard feedback questions
       isActive: isActive !== undefined ? isActive : true
     })
 
@@ -214,7 +219,8 @@ router.put('/admin/course/:id', authenticateAdmin, async (req, res, next) => {
     if (courseCode) course.courseCode = courseCode.toUpperCase()
     if (courseName) course.courseName = courseName
     if (surveyQuestions !== undefined) course.surveyQuestions = surveyQuestions
-    if (feedbackQuestions !== undefined) course.feedbackQuestions = feedbackQuestions
+    // Feedback questions are always standard - ignore any updates
+    course.feedbackQuestions = STANDARD_FEEDBACK_QUESTIONS
     if (isActive !== undefined) course.isActive = isActive
 
     await course.save()

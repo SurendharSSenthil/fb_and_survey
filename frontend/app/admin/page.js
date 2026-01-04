@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Layout, Card, Form, Input, Button, Table, Select, Space, Typography, Alert, Statistic, Row, Col, List, Divider } from 'antd'
-import { LoginOutlined, LogoutOutlined } from '@ant-design/icons'
+import { Layout, Card, Form, Input, Button, Table, Select, Space, Typography, Alert, Statistic, Row, Col, List, Divider, Modal } from 'antd'
+import { LoginOutlined, LogoutOutlined, PlusOutlined, DeleteOutlined, LockOutlined } from '@ant-design/icons'
 import api from '../../lib/api'
 import { LikertLabels } from '../../lib/constants'
+import { STANDARD_FEEDBACK_QUESTIONS } from '../../lib/standardFeedbackQuestions'
 
 const { Header, Content } = Layout
 const { Title, Text } = Typography
@@ -33,6 +34,19 @@ export default function AdminPage () {
   // Reports
   const [reports, setReports] = useState([])
 
+  // Course Creation
+  const [isCourseModalOpen, setIsCourseModalOpen] = useState(false)
+  const [courseFormData, setCourseFormData] = useState({
+    courseCode: '',
+    courseName: '',
+    deptCode: '',
+    year: new Date().getFullYear(),
+    semester: 1,
+    surveyQuestions: [],
+    feedbackQuestions: [],
+    isActive: true
+  })
+
   // Check for existing token
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -55,7 +69,7 @@ export default function AdminPage () {
     try {
       setLoading(true)
       setError(null)
-      const response = await api.post('/admin/login', values)
+      const response = await api.post('/api/admin/login', values)
       const { token: newToken } = response.data
       setToken(newToken)
       setIsLoggedIn(true)
@@ -80,7 +94,7 @@ export default function AdminPage () {
   const loadDepartments = async () => {
     try {
       setLoading(true)
-      const response = await api.get('/admin/departments', {
+      const response = await api.get('/api/admin/departments', {
         headers: { Authorization: `Bearer ${token}` }
       })
       setDepartments(response.data)
@@ -100,7 +114,7 @@ export default function AdminPage () {
     try {
       setLoading(true)
       setError(null)
-      await api.post('/admin/departments', {
+      await api.post('/api/admin/departments', {
         code: newDeptCode.toUpperCase(),
         name: newDeptName,
         active: true
@@ -126,12 +140,97 @@ export default function AdminPage () {
     try {
       setLoading(true)
       setError(null)
-      const response = await api.get(`/admin/report?deptCode=${selectedDept}&year=${selectedYear}&semester=${selectedSemester}`, {
+      const response = await api.get(`/api/admin/report?deptCode=${selectedDept}&year=${selectedYear}&semester=${selectedSemester}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setReports(response.data)
     } catch (err) {
       setError(err.message || 'Failed to load report')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleOpenCourseModal = () => {
+    setCourseFormData({
+      courseCode: '',
+      courseName: '',
+      deptCode: '',
+      year: new Date().getFullYear(),
+      semester: 1,
+      surveyQuestions: [],
+      isActive: true
+    })
+    setIsCourseModalOpen(true)
+  }
+
+  const handleCloseCourseModal = () => {
+    setIsCourseModalOpen(false)
+  }
+
+  const handleAddSurveyQuestion = () => {
+    const questionId = `SQ${Date.now()}`
+    setCourseFormData({
+      ...courseFormData,
+      surveyQuestions: [
+        ...courseFormData.surveyQuestions,
+        { questionId, text: '' }
+      ]
+    })
+  }
+
+  const handleRemoveSurveyQuestion = (index) => {
+    setCourseFormData({
+      ...courseFormData,
+      surveyQuestions: courseFormData.surveyQuestions.filter((_, i) => i !== index)
+    })
+  }
+
+  const handleUpdateSurveyQuestion = (index, text) => {
+    const updated = [...courseFormData.surveyQuestions]
+    updated[index] = { ...updated[index], text }
+    setCourseFormData({
+      ...courseFormData,
+      surveyQuestions: updated
+    })
+  }
+
+
+  const handleCreateCourse = async () => {
+    if (!courseFormData.courseCode || !courseFormData.courseName || !courseFormData.deptCode) {
+      setError('Please fill in all required fields')
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Filter out empty questions
+      const surveyQuestions = courseFormData.surveyQuestions.filter(q => q.text.trim())
+      // Feedback questions are standard and handled by backend
+
+      await api.post('/api/admin/course', {
+        courseCode: courseFormData.courseCode,
+        courseName: courseFormData.courseName,
+        deptCode: courseFormData.deptCode,
+        year: courseFormData.year,
+        semester: courseFormData.semester,
+        surveyQuestions,
+        // feedbackQuestions not sent - backend uses standard questions
+        isActive: courseFormData.isActive
+      }, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+      })
+
+      handleCloseCourseModal()
+      setError(null)
+      // Optionally reload reports if viewing the same dept/year/sem
+      if (selectedDept === courseFormData.deptCode && selectedYear === courseFormData.year && selectedSemester === courseFormData.semester) {
+        await handleLoadReport()
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to create course')
     } finally {
       setLoading(false)
     }
@@ -194,7 +293,7 @@ export default function AdminPage () {
 
         <Row gutter={[16, 16]}>
           {/* Create Department */}
-          <Col xs={24} md={12}>
+          <Col xs={24} md={8}>
             <Card title='Create Department'>
               <Space direction='vertical' style={{ width: '100%' }}>
                 <Input
@@ -214,8 +313,17 @@ export default function AdminPage () {
             </Card>
           </Col>
 
+          {/* Create Course */}
+          <Col xs={24} md={8}>
+            <Card title='Create Course'>
+              <Button type='primary' block onClick={handleOpenCourseModal} style={{ height: 'auto', padding: '12px' }}>
+                <PlusOutlined /> Add New Course
+              </Button>
+            </Card>
+          </Col>
+
           {/* View Reports */}
-          <Col xs={24} md={12}>
+          <Col xs={24} md={8}>
             <Card title='View Reports'>
               <Space direction='vertical' style={{ width: '100%' }} size='middle'>
                 <Select
@@ -248,6 +356,12 @@ export default function AdminPage () {
                 >
                   <Option value={1}>Semester 1</Option>
                   <Option value={2}>Semester 2</Option>
+                  <Option value={3}>Semester 3</Option>
+                  <Option value={4}>Semester 4</Option>
+                  <Option value={5}>Semester 5</Option>
+                  <Option value={6}>Semester 6</Option>
+                  <Option value={7}>Semester 7</Option>
+                  <Option value={8}>Semester 8</Option>
                 </Select>
                 <Button type='primary' block onClick={handleLoadReport} loading={loading}>
                   Load Report
@@ -354,6 +468,176 @@ export default function AdminPage () {
             ))}
           </div>
         )}
+
+        {/* Course Creation Modal */}
+        <Modal
+          title='Create New Course'
+          open={isCourseModalOpen}
+          onCancel={handleCloseCourseModal}
+          footer={null}
+          width={800}
+          style={{ top: 20 }}
+        >
+          <Space direction='vertical' style={{ width: '100%' }} size='large'>
+            <Row gutter={16}>
+              <Col span={12}>
+                <div>
+                  <Text strong>Department *</Text>
+                  <Select
+                    style={{ width: '100%', marginTop: 8 }}
+                    placeholder='Select Department'
+                    value={courseFormData.deptCode}
+                    onChange={(value) => setCourseFormData({ ...courseFormData, deptCode: value })}
+                    showSearch
+                    options={departments.map(dept => ({
+                      value: dept.code,
+                      label: `${dept.code} - ${dept.name}`
+                    }))}
+                  />
+                </div>
+              </Col>
+              <Col span={12}>
+                <div>
+                  <Text strong>Year *</Text>
+                  <Select
+                    style={{ width: '100%', marginTop: 8 }}
+                    value={courseFormData.year}
+                    onChange={(value) => setCourseFormData({ ...courseFormData, year: value })}
+                  >
+                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                      <Option key={year} value={year}>{year}</Option>
+                    ))}
+                  </Select>
+                </div>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <div>
+                  <Text strong>Semester *</Text>
+                  <Select
+                    style={{ width: '100%', marginTop: 8 }}
+                    value={courseFormData.semester}
+                    onChange={(value) => setCourseFormData({ ...courseFormData, semester: value })}
+                  >
+                    <Option value={1}>Semester 1</Option>
+                    <Option value={2}>Semester 2</Option>
+                    <Option value={3}>Semester 3</Option>
+                    <Option value={4}>Semester 4</Option>
+                    <Option value={5}>Semester 5</Option>
+                    <Option value={6}>Semester 6</Option>
+                    <Option value={7}>Semester 7</Option>
+                    <Option value={8}>Semester 8</Option>
+                  </Select>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div>
+                  <Text strong>Course Code *</Text>
+                  <Input
+                    style={{ marginTop: 8 }}
+                    placeholder='e.g., CS101'
+                    value={courseFormData.courseCode}
+                    onChange={(e) => setCourseFormData({ ...courseFormData, courseCode: e.target.value.toUpperCase() })}
+                  />
+                </div>
+              </Col>
+            </Row>
+
+            <div>
+              <Text strong>Course Name *</Text>
+              <Input
+                style={{ marginTop: 8 }}
+                placeholder='Enter course name'
+                value={courseFormData.courseName}
+                onChange={(e) => setCourseFormData({ ...courseFormData, courseName: e.target.value })}
+              />
+            </div>
+
+            <Divider>Survey Questions</Divider>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Text strong>Survey Questions</Text>
+                <Button
+                  type='dashed'
+                  icon={<PlusOutlined />}
+                  onClick={handleAddSurveyQuestion}
+                  size='small'
+                >
+                  Add Question
+                </Button>
+              </div>
+              <Space direction='vertical' style={{ width: '100%' }} size='middle'>
+                {courseFormData.surveyQuestions.map((question, index) => (
+                  <Card key={question.questionId} size='small'>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <Input
+                        placeholder={`Survey Question ${index + 1}`}
+                        value={question.text}
+                        onChange={(e) => handleUpdateSurveyQuestion(index, e.target.value)}
+                        style={{ flex: 1 }}
+                      />
+                      <Button
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleRemoveSurveyQuestion(index)}
+                      />
+                    </div>
+                  </Card>
+                ))}
+                {courseFormData.surveyQuestions.length === 0 && (
+                  <Text type='secondary' style={{ fontStyle: 'italic' }}>
+                    No survey questions added. Click "Add Question" to add one.
+                  </Text>
+                )}
+              </Space>
+            </div>
+
+            <Divider>
+              <Space>
+                <LockOutlined />
+                <Text strong>Standard Feedback Questions (Fixed for all courses)</Text>
+              </Space>
+            </Divider>
+            <div>
+              <Alert
+                message='These feedback questions are standard and cannot be modified. They will be automatically included for all courses.'
+                type='info'
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #f0f0f0', borderRadius: '4px', padding: '12px' }}>
+                <Space direction='vertical' style={{ width: '100%' }} size='small'>
+                  {STANDARD_FEEDBACK_QUESTIONS.map((question, index) => (
+                    <div
+                      key={question.questionId}
+                      style={{
+                        padding: '8px 12px',
+                        background: '#fafafa',
+                        borderRadius: '4px',
+                        border: '1px solid #e8e8e8'
+                      }}
+                    >
+                      <Text>
+                        <Text strong>{index + 1}.</Text> {question.text}
+                      </Text>
+                    </div>
+                  ))}
+                </Space>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+              <Button onClick={handleCloseCourseModal}>
+                Cancel
+              </Button>
+              <Button type='primary' onClick={handleCreateCourse} loading={loading}>
+                Create Course
+              </Button>
+            </div>
+          </Space>
+        </Modal>
       </Content>
     </Layout>
   )
