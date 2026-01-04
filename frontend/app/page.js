@@ -1,67 +1,85 @@
 'use client'
 
-import { Layout, Typography, Card, Row, Col } from 'antd'
-import { CheckCircleOutlined } from '@ant-design/icons'
+import { useRouter } from 'next/navigation'
+import { Layout, Card, Button, Space, Typography } from 'antd'
+import { UserOutlined, LockOutlined } from '@ant-design/icons'
+import { Routes, Messages, UI, CSS_CLASSES } from '../lib/constants/index.js'
 
 const { Header, Content, Footer } = Layout
-const { Title, Paragraph } = Typography
+const { Title, Text } = Typography
 
 export default function Home () {
+  const router = useRouter()
+
+  const handleStudentClick = () => {
+    router.push(Routes.STUDENT)
+  }
+
+  const handleAdminClick = () => {
+    router.push(Routes.ADMIN)
+  }
+
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', background: '#f5f5f5' }}>
       <Header style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        background: '#001529',
-        padding: '0 24px'
+        background: UI.COLORS.PRIMARY, 
+        padding: `0 ${UI.SPACING.MD}px`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
-        <Title level={3} style={{ color: '#fff', margin: 0 }}>
-          FB and Survey
+        <Title level={3} style={{ color: '#fff', margin: 0, fontSize: UI.FONT_SIZES.XXL }}>
+          {Messages.SYSTEM_NAME}
         </Title>
       </Header>
-      <Content style={{ padding: '24px', background: '#f0f2f5' }}>
-        <Row justify='center' style={{ marginTop: '50px' }}>
-          <Col xs={24} sm={24} md={20} lg={16} xl={12}>
-            <Card>
-              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                <CheckCircleOutlined style={{ fontSize: '64px', color: '#52c41a' }} />
-              </div>
-              <Title level={2} style={{ textAlign: 'center' }}>
-                Welcome to FB and Survey
-              </Title>
-              <Paragraph style={{ textAlign: 'center', fontSize: '16px' }}>
-                Your application is set up and ready to go!
-              </Paragraph>
-              <Row gutter={[16, 16]} style={{ marginTop: '32px' }}>
-                <Col xs={24} sm={12}>
-                  <Card size='small' title='Frontend' bordered>
-                    <Paragraph>Next.js with Ant Design</Paragraph>
-                  </Card>
-                </Col>
-                <Col xs={24} sm={12}>
-                  <Card size='small' title='Backend' bordered>
-                    <Paragraph>Node.js + Express.js</Paragraph>
-                  </Card>
-                </Col>
-                <Col xs={24} sm={12}>
-                  <Card size='small' title='Database' bordered>
-                    <Paragraph>MongoDB Atlas</Paragraph>
-                  </Card>
-                </Col>
-                <Col xs={24} sm={12}>
-                  <Card size='small' title='Logging' bordered>
-                    <Paragraph>Winston Logger</Paragraph>
-                  </Card>
-                </Col>
-              </Row>
-            </Card>
-          </Col>
-        </Row>
+      <Content style={{ 
+        padding: `${UI.SPACING.XXL}px ${UI.SPACING.MD}px`,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: 'calc(100vh - 128px)'
+      }}>
+        <Card style={{ 
+          maxWidth: UI.LAYOUT.MAX_WIDTH.NARROW,
+          width: '100%',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          textAlign: 'center'
+        }}>
+          <Title level={2} style={{ marginBottom: UI.SPACING.SM }}>
+            {Messages.WELCOME_MESSAGE}
+          </Title>
+          <Text type='secondary' style={{ fontSize: UI.FONT_SIZES.MD, display: 'block', marginBottom: UI.SPACING.XL }}>
+            {Messages.WELCOME_SELECT_ROLE}
+          </Text>
+          
+          <Space direction='vertical' style={{ width: '100%' }} size='large'>
+            <Button
+              type='primary'
+              size='large'
+              icon={<UserOutlined />}
+              onClick={handleStudentClick}
+              block
+              style={{ height: '60px', fontSize: UI.FONT_SIZES.LG }}
+            >
+              I am a Student
+            </Button>
+            <Button
+              size='large'
+              icon={<LockOutlined />}
+              onClick={handleAdminClick}
+              block
+              style={{ height: '60px', fontSize: UI.FONT_SIZES.LG }}
+            >
+              I am an Admin
+            </Button>
+          </Space>
+        </Card>
       </Content>
-      <Footer style={{ textAlign: 'center', background: '#f0f2f5' }}>
-        FB and Survey ©2024
+      <Footer style={{ textAlign: 'center', background: UI.COLORS.FOOTER_BG, padding: `${UI.SPACING.SM}px` }}>
+        <Text type='secondary' style={{ fontSize: UI.FONT_SIZES.SM }}>
+          {Messages.SYSTEM_NAME}
+        </Text>
       </Footer>
     </Layout>
   )
 }
-

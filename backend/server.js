@@ -1,11 +1,14 @@
 import express from 'express'
 import dotenv from 'dotenv'
+import cors from 'cors'
 import connectDB from './config/database.js'
 import logger from './utils/logger.js'
 import { requestLogger, errorLogger } from './middleware/logger.js'
 import errorHandler from './middleware/errorHandler.js'
 import notFound from './middleware/notFound.js'
 import routes from './routes/index.js'
+import studentRoutes from './routes/student.js'
+import adminRoutes from './routes/admin.js'
 
 // Load environment variables
 dotenv.config()
@@ -16,12 +19,14 @@ const app = express()
 // Middleware
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
-
+app.use(cors())
 // Request logging middleware
 app.use(requestLogger)
 
 // Routes
-app.use('/', routes)
+app.use('/api', routes)
+app.use('/api', studentRoutes)
+app.use('/api', adminRoutes)
 
 // 404 handler
 app.use(notFound)

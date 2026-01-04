@@ -31,3 +31,87 @@ a {
   }
 }
 
+/* Responsive styles for mobile - reduced padding and spacing */
+@media (max-width: 768px) {
+  .student-header-title {
+    font-size: 16px !important;
+  }
+  
+  .student-header-subtitle {
+    font-size: 11px !important;
+  }
+  
+  .student-header-tag {
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+  }
+  
+  .student-content {
+    padding: 8px !important;
+  }
+  
+  .student-card-title {
+    font-size: 15px !important;
+  }
+  
+  .student-card-text {
+    font-size: 12px !important;
+  }
+  
+  .student-button-text {
+    font-size: 12px !important;
+  }
+  
+  .student-tag {
+    font-size: 10px !important;
+  }
+
+  /* Reduce spacing in Ant Design components on mobile */
+  .ant-space-vertical > .ant-space-item {
+    margin-bottom: 8px !important;
+  }
+
+  .ant-card {
+    margin-bottom: 8px !important;
+  }
+
+  .ant-card-body {
+    padding: 12px !important;
+  }
+
+  .ant-row {
+    margin-left: -4px !important;
+    margin-right: -4px !important;
+  }
+
+  .ant-col {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+  }
+
+  .ant-btn {
+    margin-bottom: 4px !important;
+  }
+
+  /* Header and Footer mobile spacing */
+  .ant-layout-header {
+    padding: 0 8px !important;
+    min-height: 56px !important;
+  }
+
+  .ant-layout-footer {
+    padding: 8px !important;
+  }
+
+  /* Content padding reduction */
+  .ant-layout-content {
+    padding: 8px !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .student-content {
+    padding: 24px !important;
+  }
+}
+
