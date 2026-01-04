@@ -1,6 +1,7 @@
 import express from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import PDFDocument from 'pdfkit'
 import Admin from '../models/Admin.js'
 import Department from '../models/Department.js'
 import Course from '../models/Course.js'
@@ -9,6 +10,7 @@ import FeedbackResponse from '../models/FeedbackResponse.js'
 import { authenticateAdmin } from '../middleware/auth.js'
 import { JWT_SECRET } from '../constants/index.js'
 import { STANDARD_FEEDBACK_QUESTIONS } from '../constants/feedbackQuestions.js'
+import { LikertLabels } from '../constants/index.js'
 import logger from '../utils/logger.js'
 
 const router = express.Router()
@@ -233,6 +235,210 @@ router.put('/admin/course/:id', authenticateAdmin, async (req, res, next) => {
     })
   } catch (error) {
     logger.error('Error updating course:', error)
+    next(error)
+  }
+})
+
+// GET /api/admin/course/:id
+router.get('/admin/course/:id', authenticateAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params
+
+    const course = await Course.findById(id)
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'Course not found' }
+      })
+    }
+
+    const [surveyResponses, feedbackResponses] = await Promise.all([
+      SurveyResponse.find({ courseId: course._id }),
+      FeedbackResponse.find({ courseId: course._id })
+    ])
+
+    // Calculate survey statistics
+    const surveyStats = calculateQuestionStats(surveyResponses, course.surveyQuestions)
+    const feedbackStats = calculateQuestionStats(feedbackResponses, course.feedbackQuestions)
+
+    res.json({
+      success: true,
+      data: {
+        courseId: course._id.toString(),
+        courseCode: course.courseCode,
+        courseName: course.courseName,
+        survey: {
+          totalResponses: surveyResponses.length,
+          questionStats: surveyStats
+        },
+        feedback: {
+          totalResponses: feedbackResponses.length,
+          questionStats: feedbackStats
+        }
+      }
+    })
+  } catch (error) {
+    logger.error('Error fetching course details:', error)
+    next(error)
+  }
+})
+
+// GET /api/admin/course/:id/samples
+router.get('/admin/course/:id/samples', authenticateAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params
+
+    const course = await Course.findById(id)
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'Course not found' }
+      })
+    }
+
+    // Get 5 random samples from survey and feedback responses
+    const [surveySamples, feedbackSamples] = await Promise.all([
+      SurveyResponse.aggregate([
+        { $match: { courseId: course._id } },
+        { $sample: { size: 5 } }
+      ]),
+      FeedbackResponse.aggregate([
+        { $match: { courseId: course._id } },
+        { $sample: { size: 5 } }
+      ])
+    ])
+
+    // Create PDF
+    const doc = new PDFDocument({ margin: 50 })
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="course_${course.courseCode}_samples.pdf"`)
+    
+    // Pipe PDF to response
+    doc.pipe(res)
+
+    // Header
+    doc.fontSize(20).font('Helvetica-Bold')
+      .text('Course Feedback & Survey Samples', { align: 'center' })
+    doc.moveDown()
+    
+    doc.fontSize(14).font('Helvetica')
+      .text(`Course: ${course.courseCode} - ${course.courseName}`, { align: 'center' })
+    doc.moveDown()
+    
+    doc.fontSize(10).font('Helvetica-Oblique')
+      .text(`Generated on: ${new Date().toLocaleString()}`, { align: 'center' })
+    doc.moveDown(2)
+
+    // Survey Samples Section
+    if (surveySamples.length > 0) {
+      doc.fontSize(16).font('Helvetica-Bold')
+        .text('SURVEY RESPONSES', { underline: true })
+      doc.moveDown()
+
+      surveySamples.forEach((sample, index) => {
+        doc.fontSize(12).font('Helvetica-Bold')
+          .text(`Sample ${index + 1}`, { underline: true })
+        
+        doc.fontSize(10).font('Helvetica')
+          .text(`Student ID: ${sample.studentId}`)
+          .text(`Submitted At: ${new Date(sample.submittedAt).toLocaleString()}`)
+        doc.moveDown(0.5)
+
+        // Map answers to questions
+        const questionMap = {}
+        course.surveyQuestions.forEach(q => {
+          questionMap[q.questionId] = q.text
+        })
+
+        doc.fontSize(10).font('Helvetica-Bold')
+          .text('Answers:')
+        doc.moveDown(0.3)
+
+        sample.answers.forEach((answer, ansIndex) => {
+          const questionText = questionMap[answer.questionId] || `Question ${answer.questionId}`
+          const answerLabel = LikertLabels[answer.value] || `Value ${answer.value}`
+          
+          doc.fontSize(9).font('Helvetica')
+            .text(`${ansIndex + 1}. ${questionText}`, { indent: 20 })
+            .font('Helvetica-Bold')
+            .text(`   Answer: ${answerLabel} (${answer.value})`, { indent: 30 })
+          doc.moveDown(0.2)
+        })
+
+        doc.moveDown(1)
+        if (index < surveySamples.length - 1) {
+          doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke()
+          doc.moveDown(1)
+        }
+      })
+    }
+
+    // Feedback Samples Section
+    if (feedbackSamples.length > 0) {
+      doc.addPage()
+      doc.fontSize(16).font('Helvetica-Bold')
+        .text('FEEDBACK RESPONSES', { underline: true })
+      doc.moveDown()
+
+      feedbackSamples.forEach((sample, index) => {
+        doc.fontSize(12).font('Helvetica-Bold')
+          .text(`Sample ${index + 1}`, { underline: true })
+        
+        doc.fontSize(10).font('Helvetica')
+          .text(`Student ID: ${sample.studentId}`)
+          .text(`Submitted At: ${new Date(sample.submittedAt).toLocaleString()}`)
+        doc.moveDown(0.5)
+
+        // Map answers to questions
+        const questionMap = {}
+        course.feedbackQuestions.forEach(q => {
+          questionMap[q.questionId] = q.text
+        })
+
+        doc.fontSize(10).font('Helvetica-Bold')
+          .text('Answers:')
+        doc.moveDown(0.3)
+
+        sample.answers.forEach((answer, ansIndex) => {
+          const questionText = questionMap[answer.questionId] || `Question ${answer.questionId}`
+          const answerLabel = LikertLabels[answer.value] || `Value ${answer.value}`
+          
+          doc.fontSize(9).font('Helvetica')
+            .text(`${ansIndex + 1}. ${questionText}`, { indent: 20 })
+            .font('Helvetica-Bold')
+            .text(`   Answer: ${answerLabel} (${answer.value})`, { indent: 30 })
+          doc.moveDown(0.2)
+        })
+
+        if (sample.recommendation && sample.recommendation.trim()) {
+          doc.moveDown(0.3)
+          doc.fontSize(10).font('Helvetica-Bold')
+            .text('Recommendation:')
+          doc.fontSize(9).font('Helvetica')
+            .text(sample.recommendation, { indent: 20, align: 'left' })
+        }
+
+        doc.moveDown(1)
+        if (index < feedbackSamples.length - 1) {
+          doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke()
+          doc.moveDown(1)
+        }
+      })
+    }
+
+    // Footer
+    doc.fontSize(8).font('Helvetica-Oblique')
+      .text('This document contains sample submissions for course evaluation purposes.', 50, doc.page.height - 50, {
+        align: 'center',
+        width: 500
+      })
+
+    // Finalize PDF
+    doc.end()
+  } catch (error) {
+    logger.error('Error generating course samples PDF:', error)
     next(error)
   }
 })

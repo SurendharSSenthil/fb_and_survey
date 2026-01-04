@@ -13,6 +13,7 @@ const { Title, Text } = Typography
 const { Option } = Select
 
 export default function AdminPage () {
+  const router = useRouter()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [token, setToken] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -26,14 +27,11 @@ export default function AdminPage () {
   const [newDeptCode, setNewDeptCode] = useState('')
   const [newDeptName, setNewDeptName] = useState('')
 
-  // Courses
+  // Courses for reports
   const [courses, setCourses] = useState([])
   const [selectedDept, setSelectedDept] = useState(null)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedSemester, setSelectedSemester] = useState(1)
-
-  // Reports
-  const [reports, setReports] = useState([])
 
   // Course Creation
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false)
@@ -132,7 +130,7 @@ export default function AdminPage () {
     }
   }
 
-  const handleLoadReport = async () => {
+  const handleLoadCourses = async () => {
     if (!selectedDept) {
       setError('Please select a department')
       return
@@ -144,12 +142,16 @@ export default function AdminPage () {
       const response = await api.get(`/api/admin/report?deptCode=${selectedDept}&year=${selectedYear}&semester=${selectedSemester}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      setReports(response.data)
+      setCourses(response.data)
     } catch (err) {
-      setError(err.message || 'Failed to load report')
+      setError(err.message || 'Failed to load courses')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCourseClick = (courseId) => {
+    router.push(`/course/${courseId}`)
   }
 
   const handleOpenCourseModal = () => {
@@ -226,9 +228,9 @@ export default function AdminPage () {
 
       handleCloseCourseModal()
       setError(null)
-      // Optionally reload reports if viewing the same dept/year/sem
+      // Optionally reload courses if viewing the same dept/year/sem
       if (selectedDept === courseFormData.deptCode && selectedYear === courseFormData.year && selectedSemester === courseFormData.semester) {
-        await handleLoadReport()
+        await handleLoadCourses()
       }
     } catch (err) {
       setError(err.message || 'Failed to create course')
@@ -364,109 +366,57 @@ export default function AdminPage () {
                   <Option value={7}>Semester 7</Option>
                   <Option value={8}>Semester 8</Option>
                 </Select>
-                <Button type='primary' block onClick={handleLoadReport} loading={loading}>
-                  Load Report
+                <Button type='primary' block onClick={handleLoadCourses} loading={loading}>
+                  Show Courses
                 </Button>
               </Space>
             </Card>
           </Col>
         </Row>
 
-        {/* Reports Display */}
-        {reports.length > 0 && (
+        {/* Courses Display */}
+        {courses.length > 0 && (
           <div style={{ marginTop: 24 }}>
-            {reports.map((report) => (
-              <Card key={report.courseId} title={`${report.courseCode} - ${report.courseName}`} style={{ marginBottom: 16 }}>
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} sm={12}>
-                    <Statistic
-                      title='Survey Responses'
-                      value={report.survey.totalResponses}
-                    />
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <Statistic
-                      title='Feedback Responses'
-                      value={report.feedback.totalResponses}
-                    />
-                  </Col>
-                </Row>
-
-                <Divider />
-
-                {/* Survey Statistics */}
-                {Object.keys(report.survey.questionStats).length > 0 && (
-                  <div style={{ marginBottom: 24 }}>
-                    <Title level={5}>Survey Statistics</Title>
-                    {Object.entries(report.survey.questionStats).map(([qId, stats]) => (
-                      <Card key={qId} size='small' style={{ marginBottom: 8 }}>
-                        <Text strong>{stats.questionText}</Text>
-                        <Row gutter={16} style={{ marginTop: 8 }}>
-                          <Col span={12}>
-                            <Text>Average: {stats.average.toFixed(2)}</Text>
-                          </Col>
-                          <Col span={12}>
-                            <Text>Responses: {stats.count}</Text>
-                          </Col>
-                        </Row>
-                        <div style={{ marginTop: 8 }}>
-                          <Text type='secondary' small>Distribution: </Text>
-                          {Object.entries(stats.distribution).map(([value, count]) => (
-                            <Text key={value} type='secondary' small>
-                              {LikertLabels[value]}: {count}{' '}
-                            </Text>
-                          ))}
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-
-                {/* Feedback Statistics */}
-                {Object.keys(report.feedback.questionStats).length > 0 && (
-                  <div style={{ marginBottom: 24 }}>
-                    <Title level={5}>Feedback Statistics</Title>
-                    {Object.entries(report.feedback.questionStats).map(([qId, stats]) => (
-                      <Card key={qId} size='small' style={{ marginBottom: 8 }}>
-                        <Text strong>{stats.questionText}</Text>
-                        <Row gutter={16} style={{ marginTop: 8 }}>
-                          <Col span={12}>
-                            <Text>Average: {stats.average.toFixed(2)}</Text>
-                          </Col>
-                          <Col span={12}>
-                            <Text>Responses: {stats.count}</Text>
-                          </Col>
-                        </Row>
-                        <div style={{ marginTop: 8 }}>
-                          <Text type='secondary' small>Distribution: </Text>
-                          {Object.entries(stats.distribution).map(([value, count]) => (
-                            <Text key={value} type='secondary' small>
-                              {LikertLabels[value]}: {count}{' '}
-                            </Text>
-                          ))}
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-
-                {/* Recommendations */}
-                {report.feedback.recommendations?.length > 0 && (
-                  <div>
-                    <Title level={5}>Recommendations</Title>
-                    <List
-                      bordered
-                      dataSource={report.feedback.recommendations}
-                      renderItem={(item) => (
-                        <List.Item>
-                          <Text>{item}</Text>
-                        </List.Item>
-                      )}
-                    />
-                  </div>
-                )}
-              </Card>
-            ))}
+            <Title level={3} style={{ marginBottom: 16 }}>Courses</Title>
+            <Row gutter={[16, 16]}>
+              {courses.map((course) => (
+                <Col xs={24} sm={12} md={8} lg={6} key={course.courseId}>
+                  <Card
+                    hoverable
+                    onClick={() => handleCourseClick(course.courseId)}
+                    style={{
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    }}
+                  >
+                    <Title level={4} style={{ marginBottom: 8 }}>
+                      {course.courseCode}
+                    </Title>
+                    <Text type='secondary' style={{ fontSize: '14px' }}>
+                      {course.courseName}
+                    </Text>
+                    <div style={{ marginTop: 12 }}>
+                      <Row gutter={8}>
+                        <Col span={12}>
+                          <Statistic
+                            title='Survey'
+                            value={course.survey?.totalResponses || 0}
+                            valueStyle={{ fontSize: '18px' }}
+                          />
+                        </Col>
+                        <Col span={12}>
+                          <Statistic
+                            title='Feedback'
+                            value={course.feedback?.totalResponses || 0}
+                            valueStyle={{ fontSize: '18px' }}
+                          />
+                        </Col>
+                      </Row>
+                    </div>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
           </div>
         )}
 

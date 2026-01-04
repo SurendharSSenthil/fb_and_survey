@@ -7,6 +7,15 @@ export const LikertScale = {
   STRONGLY_AGREE: 5
 }
 
+// Likert Scale Labels
+export const LikertLabels = {
+  1: 'Strongly Disagree',
+  2: 'Disagree',
+  3: 'Neutral',
+  4: 'Agree',
+  5: 'Strongly Agree'
+}
+
 // Student ID Expiry (2 days in milliseconds)
 export const STUDENT_ID_EXPIRY_MS = 2 * 24 * 60 * 60 * 1000
 
