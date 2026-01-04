@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Layout, Card, Form, Input, Button, Table, Select, Space, Typography, Alert, Statistic, Row, Col, List, Divider, Modal } from 'antd'
-import { LoginOutlined, LogoutOutlined, PlusOutlined, DeleteOutlined, LockOutlined } from '@ant-design/icons'
+import { LoginOutlined, LogoutOutlined, PlusOutlined, DeleteOutlined, LockOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useRouter } from 'next/navigation'
 import api from '../../lib/api'
 import { LikertLabels } from '../../lib/constants'
@@ -32,6 +32,8 @@ export default function AdminPage () {
   const [selectedDept, setSelectedDept] = useState(null)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedSemester, setSelectedSemester] = useState(1)
+  const [downloadingSurvey, setDownloadingSurvey] = useState({})
+  const [downloadingFeedback, setDownloadingFeedback] = useState({})
 
   // Course Creation
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false)
@@ -152,6 +154,86 @@ export default function AdminPage () {
 
   const handleCourseClick = (courseId) => {
     router.push(`/course/${courseId}`)
+  }
+
+  const handleDownloadSurveySamples = async (courseId, courseCode, e) => {
+    e.stopPropagation() // Prevent card click
+    try {
+      setDownloadingSurvey(prev => ({ ...prev, [courseId]: true }))
+      setError(null)
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      const response = await fetch(`${API_URL}/api/admin/course/${courseId}/samples/survey`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        try {
+          const jsonError = JSON.parse(errorData)
+          throw new Error(jsonError.error?.message || 'Failed to download survey samples')
+        } catch {
+          throw new Error('Failed to download survey samples')
+        }
+      }
+
+      // Get PDF blob
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `course_${courseCode}_survey_samples.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      setError(err.message || 'Failed to download survey samples')
+    } finally {
+      setDownloadingSurvey(prev => ({ ...prev, [courseId]: false }))
+    }
+  }
+
+  const handleDownloadFeedbackSamples = async (courseId, courseCode, e) => {
+    e.stopPropagation() // Prevent card click
+    try {
+      setDownloadingFeedback(prev => ({ ...prev, [courseId]: true }))
+      setError(null)
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      const response = await fetch(`${API_URL}/api/admin/course/${courseId}/samples/feedback`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        try {
+          const jsonError = JSON.parse(errorData)
+          throw new Error(jsonError.error?.message || 'Failed to download feedback samples')
+        } catch {
+          throw new Error('Failed to download feedback samples')
+        }
+      }
+
+      // Get PDF blob
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `course_${courseCode}_feedback_samples.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      setError(err.message || 'Failed to download feedback samples')
+    } finally {
+      setDownloadingFeedback(prev => ({ ...prev, [courseId]: false }))
+    }
   }
 
   const handleOpenCourseModal = () => {
@@ -283,7 +365,7 @@ export default function AdminPage () {
         <Title level={3} style={{ color: '#fff', margin: 0 }}>Admin Dashboard</Title>
         <Button icon={<LogoutOutlined />} onClick={handleLogout}>Logout</Button>
       </Header>
-      <Content style={{ padding: '24px' }}>
+      <Content className='student-content' style={{ padding: '24px' }}>
         {error && (
           <Alert
             message={error}
@@ -412,6 +494,30 @@ export default function AdminPage () {
                           />
                         </Col>
                       </Row>
+                    </div>
+                    <div style={{ marginTop: 12 }}>
+                      <Space direction='vertical' style={{ width: '100%' }} size='small'>
+                        <Button
+                          type='default'
+                          size='small'
+                          icon={<DownloadOutlined />}
+                          onClick={(e) => handleDownloadSurveySamples(course.courseId, course.courseCode, e)}
+                          loading={downloadingSurvey[course.courseId]}
+                          block
+                        >
+                          Survey Samples
+                        </Button>
+                        <Button
+                          type='default'
+                          size='small'
+                          icon={<DownloadOutlined />}
+                          onClick={(e) => handleDownloadFeedbackSamples(course.courseId, course.courseCode, e)}
+                          loading={downloadingFeedback[course.courseId]}
+                          block
+                        >
+                          Feedback Samples
+                        </Button>
+                      </Space>
                     </div>
                   </Card>
                 </Col>

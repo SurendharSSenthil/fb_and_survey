@@ -15,7 +15,8 @@ export default function CourseDetailPage () {
   const courseId = params.id
 
   const [loading, setLoading] = useState(false)
-  const [downloading, setDownloading] = useState(false)
+  const [downloadingSurvey, setDownloadingSurvey] = useState(false)
+  const [downloadingFeedback, setDownloadingFeedback] = useState(false)
   const [error, setError] = useState(null)
   const [courseData, setCourseData] = useState(null)
 
@@ -48,9 +49,9 @@ export default function CourseDetailPage () {
     }
   }
 
-  const handleDownloadSamples = async () => {
+  const handleDownloadSurveySamples = async () => {
     try {
-      setDownloading(true)
+      setDownloadingSurvey(true)
       setError(null)
 
       const token = localStorage.getItem('adminToken')
@@ -60,7 +61,7 @@ export default function CourseDetailPage () {
       }
 
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
-      const response = await fetch(`${API_URL}/api/admin/course/${courseId}/samples`, {
+      const response = await fetch(`${API_URL}/api/admin/course/${courseId}/samples/survey`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -70,9 +71,9 @@ export default function CourseDetailPage () {
         const errorData = await response.text()
         try {
           const jsonError = JSON.parse(errorData)
-          throw new Error(jsonError.error?.message || 'Failed to download samples')
+          throw new Error(jsonError.error?.message || 'Failed to download survey samples')
         } catch {
-          throw new Error('Failed to download samples')
+          throw new Error('Failed to download survey samples')
         }
       }
 
@@ -81,21 +82,66 @@ export default function CourseDetailPage () {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `course_${courseData.courseCode}_samples.pdf`
+      a.download = `course_${courseData.courseCode}_survey_samples.pdf`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch (err) {
-      setError(err.message || 'Failed to download samples')
+      setError(err.message || 'Failed to download survey samples')
     } finally {
-      setDownloading(false)
+      setDownloadingSurvey(false)
+    }
+  }
+
+  const handleDownloadFeedbackSamples = async () => {
+    try {
+      setDownloadingFeedback(true)
+      setError(null)
+
+      const token = localStorage.getItem('adminToken')
+      if (!token) {
+        router.push('/admin')
+        return
+      }
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      const response = await fetch(`${API_URL}/api/admin/course/${courseId}/samples/feedback`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        try {
+          const jsonError = JSON.parse(errorData)
+          throw new Error(jsonError.error?.message || 'Failed to download feedback samples')
+        } catch {
+          throw new Error('Failed to download feedback samples')
+        }
+      }
+
+      // Get PDF blob
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `course_${courseData.courseCode}_feedback_samples.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      setError(err.message || 'Failed to download feedback samples')
+    } finally {
+      setDownloadingFeedback(false)
     }
   }
 
   if (loading) {
     return (
-      <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
+      <div className='student-content' style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
         <Card>
           <div style={{ textAlign: 'center', padding: '40px' }}>
             <Spin size='large' />
@@ -110,7 +156,7 @@ export default function CourseDetailPage () {
 
   if (!courseData) {
     return (
-      <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
+      <div className='student-content' style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
         <Card>
           <Alert
             message='Course not found'
@@ -128,8 +174,8 @@ export default function CourseDetailPage () {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
-      <Card style={{ marginBottom: 16 }}>
+    <div className='student-content' style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
+      <Card style={{ marginBottom: 12 }}>
         <Space direction='vertical' style={{ width: '100%' }} size='middle'>
           <Button
             icon={<ArrowLeftOutlined />}
@@ -156,14 +202,24 @@ export default function CourseDetailPage () {
               />
             </Col>
           </Row>
-          <Button
-            type='primary'
-            icon={<DownloadOutlined />}
-            onClick={handleDownloadSamples}
-            loading={downloading}
-          >
-            Download Samples PDF (5 random submissions)
-          </Button>
+          <Space>
+            <Button
+              type='primary'
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadSurveySamples}
+              loading={downloadingSurvey}
+            >
+              Download Survey Samples
+            </Button>
+            <Button
+              type='primary'
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadFeedbackSamples}
+              loading={downloadingFeedback}
+            >
+              Download Feedback Samples
+            </Button>
+          </Space>
         </Space>
       </Card>
 

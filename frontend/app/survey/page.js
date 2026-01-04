@@ -92,7 +92,7 @@ export default function SurveyPage () {
 
   if (loading) {
     return (
-      <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
+      <div className='student-content' style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
         <Card>
           <div style={{ textAlign: 'center', padding: '40px' }}>
             <Spin size='large' />
@@ -107,7 +107,7 @@ export default function SurveyPage () {
 
   if (!course) {
     return (
-      <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
+      <div className='student-content' style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
         <Card>
           <Alert
             message='Course not found'
@@ -125,19 +125,19 @@ export default function SurveyPage () {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
-      <Card style={{ marginBottom: 16 }}>
+    <div className='student-content' style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
+      <Card style={{ marginBottom: 12 }}>
         <Button
           icon={<ArrowLeftOutlined />}
           onClick={() => router.push('/student')}
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: 12 }}
         >
           Back to Courses
         </Button>
-        <Title level={2} style={{ margin: 0 }}>
+        <Title level={2} style={{ margin: 0, fontSize: '18px' }}>
           {course.courseCode} - {course.courseName}
         </Title>
-        <Text type='secondary'>Survey Questions</Text>
+        <Text type='secondary' style={{ fontSize: '13px' }}>Survey Questions</Text>
       </Card>
 
       {error && (
@@ -146,12 +146,12 @@ export default function SurveyPage () {
           type='error'
           closable
           onClose={() => setError(null)}
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: 12 }}
         />
       )}
 
       <Card>
-        <Space direction='vertical' style={{ width: '100%' }} size='large'>
+        <Space direction='vertical' style={{ width: '100%' }} size='middle'>
           {course.surveyQuestions?.map((question, index) => (
             <Card key={question.questionId} size='small' style={{ background: '#fafafa' }}>
               <Text strong style={{ fontSize: '15px' }}>
@@ -177,7 +177,7 @@ export default function SurveyPage () {
           ))}
         </Space>
 
-        <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
           <Button onClick={() => router.push('/student')}>
             Cancel
           </Button>

@@ -443,6 +443,222 @@ router.get('/admin/course/:id/samples', authenticateAdmin, async (req, res, next
   }
 })
 
+// GET /api/admin/course/:id/samples/survey
+router.get('/admin/course/:id/samples/survey', authenticateAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params
+
+    const course = await Course.findById(id)
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'Course not found' }
+      })
+    }
+
+    // Get 5 random samples from survey responses
+    const surveySamples = await SurveyResponse.aggregate([
+      { $match: { courseId: course._id } },
+      { $sample: { size: 5 } }
+    ])
+
+    // Create PDF
+    const doc = new PDFDocument({ margin: 50 })
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="course_${course.courseCode}_survey_samples.pdf"`)
+    
+    // Pipe PDF to response
+    doc.pipe(res)
+
+    // Header
+    doc.fontSize(20).font('Helvetica-Bold')
+      .text('Course Survey Samples', { align: 'center' })
+    doc.moveDown()
+    
+    doc.fontSize(14).font('Helvetica')
+      .text(`Course: ${course.courseCode} - ${course.courseName}`, { align: 'center' })
+    doc.moveDown()
+    
+    doc.fontSize(10).font('Helvetica-Oblique')
+      .text(`Generated on: ${new Date().toLocaleString()}`, { align: 'center' })
+    doc.moveDown(2)
+
+    // Survey Samples Section
+    if (surveySamples.length > 0) {
+      doc.fontSize(16).font('Helvetica-Bold')
+        .text('SURVEY RESPONSES', { underline: true })
+      doc.moveDown()
+
+      surveySamples.forEach((sample, index) => {
+        doc.fontSize(12).font('Helvetica-Bold')
+          .text(`Sample ${index + 1}`, { underline: true })
+        
+        doc.fontSize(10).font('Helvetica')
+          .text(`Student ID: ${sample.studentId}`)
+          .text(`Submitted At: ${new Date(sample.submittedAt).toLocaleString()}`)
+        doc.moveDown(0.5)
+
+        // Map answers to questions
+        const questionMap = {}
+        course.surveyQuestions.forEach(q => {
+          questionMap[q.questionId] = q.text
+        })
+
+        doc.fontSize(10).font('Helvetica-Bold')
+          .text('Answers:')
+        doc.moveDown(0.3)
+
+        sample.answers.forEach((answer, ansIndex) => {
+          const questionText = questionMap[answer.questionId] || `Question ${answer.questionId}`
+          const answerLabel = LikertLabels[answer.value] || `Value ${answer.value}`
+          
+          doc.fontSize(9).font('Helvetica')
+            .text(`${ansIndex + 1}. ${questionText}`, { indent: 20 })
+            .font('Helvetica-Bold')
+            .text(`   Answer: ${answerLabel} (${answer.value})`, { indent: 30 })
+          doc.moveDown(0.2)
+        })
+
+        doc.moveDown(1)
+        if (index < surveySamples.length - 1) {
+          doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke()
+          doc.moveDown(1)
+        }
+      })
+    } else {
+      doc.fontSize(12).font('Helvetica')
+        .text('No survey responses found for this course.', { align: 'center' })
+    }
+
+    // Footer
+    doc.fontSize(8).font('Helvetica-Oblique')
+      .text('This document contains sample survey submissions for course evaluation purposes.', 50, doc.page.height - 50, {
+        align: 'center',
+        width: 500
+      })
+
+    // Finalize PDF
+    doc.end()
+  } catch (error) {
+    logger.error('Error generating survey samples PDF:', error)
+    next(error)
+  }
+})
+
+// GET /api/admin/course/:id/samples/feedback
+router.get('/admin/course/:id/samples/feedback', authenticateAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params
+
+    const course = await Course.findById(id)
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'Course not found' }
+      })
+    }
+
+    // Get 5 random samples from feedback responses
+    const feedbackSamples = await FeedbackResponse.aggregate([
+      { $match: { courseId: course._id } },
+      { $sample: { size: 5 } }
+    ])
+
+    // Create PDF
+    const doc = new PDFDocument({ margin: 50 })
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="course_${course.courseCode}_feedback_samples.pdf"`)
+    
+    // Pipe PDF to response
+    doc.pipe(res)
+
+    // Header
+    doc.fontSize(20).font('Helvetica-Bold')
+      .text('Course Feedback Samples', { align: 'center' })
+    doc.moveDown()
+    
+    doc.fontSize(14).font('Helvetica')
+      .text(`Course: ${course.courseCode} - ${course.courseName}`, { align: 'center' })
+    doc.moveDown()
+    
+    doc.fontSize(10).font('Helvetica-Oblique')
+      .text(`Generated on: ${new Date().toLocaleString()}`, { align: 'center' })
+    doc.moveDown(2)
+
+    // Feedback Samples Section
+    if (feedbackSamples.length > 0) {
+      doc.fontSize(16).font('Helvetica-Bold')
+        .text('FEEDBACK RESPONSES', { underline: true })
+      doc.moveDown()
+
+      feedbackSamples.forEach((sample, index) => {
+        doc.fontSize(12).font('Helvetica-Bold')
+          .text(`Sample ${index + 1}`, { underline: true })
+        
+        doc.fontSize(10).font('Helvetica')
+          .text(`Student ID: ${sample.studentId}`)
+          .text(`Submitted At: ${new Date(sample.submittedAt).toLocaleString()}`)
+        doc.moveDown(0.5)
+
+        // Map answers to questions
+        const questionMap = {}
+        course.feedbackQuestions.forEach(q => {
+          questionMap[q.questionId] = q.text
+        })
+
+        doc.fontSize(10).font('Helvetica-Bold')
+          .text('Answers:')
+        doc.moveDown(0.3)
+
+        sample.answers.forEach((answer, ansIndex) => {
+          const questionText = questionMap[answer.questionId] || `Question ${answer.questionId}`
+          const answerLabel = LikertLabels[answer.value] || `Value ${answer.value}`
+          
+          doc.fontSize(9).font('Helvetica')
+            .text(`${ansIndex + 1}. ${questionText}`, { indent: 20 })
+            .font('Helvetica-Bold')
+            .text(`   Answer: ${answerLabel} (${answer.value})`, { indent: 30 })
+          doc.moveDown(0.2)
+        })
+
+        if (sample.recommendation && sample.recommendation.trim()) {
+          doc.moveDown(0.3)
+          doc.fontSize(10).font('Helvetica-Bold')
+            .text('Recommendation:')
+          doc.fontSize(9).font('Helvetica')
+            .text(sample.recommendation, { indent: 20, align: 'left' })
+        }
+
+        doc.moveDown(1)
+        if (index < feedbackSamples.length - 1) {
+          doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke()
+          doc.moveDown(1)
+        }
+      })
+    } else {
+      doc.fontSize(12).font('Helvetica')
+        .text('No feedback responses found for this course.', { align: 'center' })
+    }
+
+    // Footer
+    doc.fontSize(8).font('Helvetica-Oblique')
+      .text('This document contains sample feedback submissions for course evaluation purposes.', 50, doc.page.height - 50, {
+        align: 'center',
+        width: 500
+      })
+
+    // Finalize PDF
+    doc.end()
+  } catch (error) {
+    logger.error('Error generating feedback samples PDF:', error)
+    next(error)
+  }
+})
+
 // GET /api/admin/report
 router.get('/admin/report', authenticateAdmin, async (req, res, next) => {
   try {

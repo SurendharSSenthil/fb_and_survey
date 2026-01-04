@@ -97,7 +97,7 @@ export default function FeedbackPage () {
 
   if (loading) {
     return (
-      <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
+      <div className='student-content' style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
         <Card>
           <div style={{ textAlign: 'center', padding: '40px' }}>
             <Spin size='large' />
@@ -112,7 +112,7 @@ export default function FeedbackPage () {
 
   if (!course) {
     return (
-      <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
+      <div className='student-content' style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
         <Card>
           <Alert
             message='Course not found'
@@ -130,19 +130,19 @@ export default function FeedbackPage () {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
-      <Card style={{ marginBottom: 16 }}>
+    <div className='student-content' style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', minHeight: '100vh', background: '#f5f5f5' }}>
+      <Card style={{ marginBottom: 12 }}>
         <Button
           icon={<ArrowLeftOutlined />}
           onClick={() => router.push('/student')}
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: 12 }}
         >
           Back to Courses
         </Button>
-        <Title level={2} style={{ margin: 0 }}>
+        <Title level={2} style={{ margin: 0, fontSize: '18px' }}>
           {course.courseCode} - {course.courseName}
         </Title>
-        <Text type='secondary'>Feedback Questions</Text>
+        <Text type='secondary' style={{ fontSize: '13px' }}>Feedback Questions</Text>
       </Card>
 
       {error && (
@@ -151,12 +151,12 @@ export default function FeedbackPage () {
           type='error'
           closable
           onClose={() => setError(null)}
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: 12 }}
         />
       )}
 
       <Card>
-        <Space direction='vertical' style={{ width: '100%' }} size='large'>
+        <Space direction='vertical' style={{ width: '100%' }} size='middle'>
           {STANDARD_FEEDBACK_QUESTIONS.map((question, index) => (
             <Card key={question.questionId} size='small' style={{ background: '#fafafa' }}>
               <Text strong style={{ fontSize: '15px' }}>
@@ -182,8 +182,8 @@ export default function FeedbackPage () {
           ))}
         </Space>
 
-        <div style={{ marginTop: 24, marginBottom: 24 }}>
-          <Title level={5} style={{ marginBottom: 12 }}>
+        <div style={{ marginTop: 16, marginBottom: 16 }}>
+          <Title level={5} style={{ marginBottom: 8, fontSize: '14px' }}>
             Additional Recommendations (Optional)
           </Title>
           <TextArea
