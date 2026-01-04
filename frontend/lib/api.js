@@ -33,7 +33,13 @@ class ApiClient {
   }
 
   get (endpoint, options = {}) {
-    return this.request(endpoint, { ...options, method: 'GET' })
+    // Handle query parameters
+    let url = endpoint
+    if (options.params) {
+      const params = new URLSearchParams(options.params)
+      url += `?${params.toString()}`
+    }
+    return this.request(url, { ...options, method: 'GET', params: undefined })
   }
 
   post (endpoint, data, options = {}) {

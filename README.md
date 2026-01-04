@@ -1,32 +1,59 @@
-# FB and Survey Application
+# Anonymous Course Feedback & Survey System
 
-A full-stack application built with Next.js frontend, Node.js + Express.js backend, and MongoDB Atlas database.
+A full-stack anonymous course feedback and survey system for colleges, built with Next.js, Node.js + Express.js, and MongoDB Atlas.
 
 ## Project Structure
 
 ```
 fb_and_survey/
-├── backend/          # Node.js + Express.js backend
-│   ├── config/       # Configuration files
-│   ├── middleware/   # Express middleware
-│   ├── routes/       # API routes
-│   ├── utils/        # Utility functions
-│   ├── logs/         # Log files (generated)
-│   └── server.js     # Entry point
-├── frontend/         # Next.js frontend
-│   ├── app/          # Next.js app directory
-│   ├── lib/          # Utility libraries
-│   └── public/       # Static assets
+├── backend/              # Node.js + Express.js backend
+│   ├── config/          # Configuration files
+│   ├── constants/       # Constants and enums
+│   ├── middleware/      # Express middleware
+│   ├── models/          # Mongoose models
+│   ├── routes/          # API routes
+│   ├── scripts/         # Utility scripts
+│   ├── utils/           # Utility functions
+│   ├── logs/            # Log files (generated)
+│   └── server.js        # Entry point
+├── frontend/            # Next.js frontend
+│   ├── app/             # Next.js app directory
+│   │   ├── student/     # Student interface
+│   │   ├── admin/       # Admin interface
+│   │   └── page.js      # Home (redirects to student)
+│   ├── lib/             # Utility libraries
+│   └── public/          # Static assets
 └── README.md
 ```
 
 ## Features
 
-- **Frontend**: Next.js 14 with Ant Design UI components
-- **Backend**: Node.js + Express.js with proper error handling
-- **Database**: MongoDB Atlas connection
-- **Logging**: Winston logger with file and console transports
-- **Code Quality**: ESLint configuration for both frontend and backend
+- **Anonymous Student System**: Browser-bound, time-limited student IDs (2-day expiry)
+- **Mobile-First Student UI**: Ant Design with responsive design for mobile devices
+- **Desktop Admin UI**: Full-featured admin dashboard with reports and statistics
+- **Likert Scale Questions**: 5-point scale (Strongly Disagree to Strongly Agree)
+- **Partial Submissions**: Students can submit survey and feedback separately
+- **Duplicate Prevention**: One submission per course per student ID
+- **Comprehensive Logging**: Winston logger with file and console transports
+- **JWT Authentication**: Secure admin authentication
+
+## Tech Stack
+
+### Frontend
+- Next.js 14 (App Router)
+- React 18
+- Ant Design (antd)
+- Mobile-first responsive design
+
+### Backend
+- Node.js
+- Express.js
+- REST APIs only
+- JWT authentication for admin
+
+### Database
+- MongoDB Atlas
+- Mongoose ODM
 
 ## Setup Instructions
 
@@ -42,20 +69,26 @@ cd backend
 npm install
 ```
 
-3. Create a `.env` file (copy from `.env.example`):
+3. Create a `.env` file:
 ```bash
 cp .env.example .env
 ```
 
-4. Update `.env` with your MongoDB Atlas connection string:
-```
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority
+4. Update `.env` with your configuration:
+```env
 PORT=5000
 NODE_ENV=development
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority
 LOG_LEVEL=info
+JWT_SECRET=your-secret-key-change-in-production
 ```
 
-5. Start the development server:
+5. Create an admin user:
+```bash
+npm run create-admin <username> <password>
+```
+
+6. Start the development server:
 ```bash
 npm run dev
 ```
@@ -74,13 +107,13 @@ cd frontend
 npm install
 ```
 
-3. Create a `.env.local` file (copy from `.env.example`):
+3. Create a `.env.local` file:
 ```bash
 cp .env.example .env.local
 ```
 
-4. Update `.env.local` with your API URL:
-```
+4. Update `.env.local`:
+```env
 NEXT_PUBLIC_API_URL=http://localhost:5000
 ```
 
@@ -93,8 +126,112 @@ The frontend will run on `http://localhost:3000`
 
 ## API Endpoints
 
-- `GET /health` - Health check endpoint
-- `GET /api` - API information endpoint
+### Student APIs
+
+- `GET /api/departments/active` - Get active departments
+- `POST /api/student/generate-id` - Generate anonymous student ID
+- `GET /api/student/courses` - Get active courses for dept/year/semester
+- `GET /api/student/status` - Get submission status for courses
+- `POST /api/student/submit` - Submit survey/feedback responses
+
+### Admin APIs (Requires JWT)
+
+- `POST /api/admin/login` - Admin login
+- `GET /api/admin/departments` - Get all departments
+- `POST /api/admin/departments` - Create department
+- `PUT /api/admin/departments/:id/toggle` - Toggle department active status
+- `POST /api/admin/course` - Create course
+- `PUT /api/admin/course/:id` - Update course
+- `GET /api/admin/report` - Get reports for dept/year/semester
+
+## Database Schemas
+
+### Department
+- `code`: String (unique, e.g., "CSE")
+- `name`: String
+- `active`: Boolean
+- `createdAt`: Date
+
+### Admin
+- `username`: String (unique)
+- `passwordHash`: String
+- `createdAt`: Date
+
+### Counter
+- `deptCode`: String
+- `semester`: Number (1 or 2)
+- `year`: Number
+- `current`: Number (incremented atomically)
+
+### Course
+- `courseCode`: String
+- `courseName`: String
+- `deptCode`: String
+- `semester`: Number
+- `year`: Number
+- `surveyQuestions`: Array of {questionId, text}
+- `feedbackQuestions`: Array of {questionId, text}
+- `isActive`: Boolean
+- `createdAt`: Date
+
+### SurveyResponse
+- `courseId`: ObjectId
+- `studentId`: String
+- `answers`: Array of {questionId, value (1-5)}
+- `submittedAt`: Date
+
+### FeedbackResponse
+- `courseId`: ObjectId
+- `studentId`: String
+- `answers`: Array of {questionId, value (1-5)}
+- `recommendation`: String (optional)
+- `submittedAt`: Date
+
+## Student ID Format
+
+Student IDs are generated in the format: `<DEPT><YEAR><SEM><SEQ>`
+
+Example: `CSE202607023`
+- DEPT: CSE
+- YEAR: 2026
+- SEM: 0 (semester 1) or 1 (semester 2)
+- SEQ: 023 (3-digit sequence number)
+
+## Student Flow
+
+1. App loads and checks for existing session in localStorage
+2. If session expired or missing, student selects department, year, semester
+3. Backend generates new student ID
+4. Student ID stored in localStorage (2-day expiry)
+5. Student views active courses for selected dept/year/semester
+6. Student sees submission status (submitted/pending) for each course
+7. Student selects a course and answers survey/feedback questions
+8. Student submits responses (partial submissions allowed)
+
+## Admin Flow
+
+1. Admin logs in with username/password
+2. Admin can create/edit departments
+3. Admin can create/edit courses with survey and feedback questions
+4. Admin can activate/deactivate departments and courses
+5. Admin selects dept/year/semester to view reports
+6. Admin views:
+   - Average scores per question
+   - Response counts
+   - Likert distribution
+   - Anonymous recommendations
+
+## Constants & Enums
+
+### Likert Scale
+- `STRONGLY_DISAGREE = 1`
+- `DISAGREE = 2`
+- `NEUTRAL = 3`
+- `AGREE = 4`
+- `STRONGLY_AGREE = 5`
+
+### Student ID Expiry
+- `STUDENT_ID_EXPIRY_MS = 2 * 24 * 60 * 60 * 1000` (2 days)
 
 ## Logging
 
@@ -113,10 +250,19 @@ The backend uses Winston for logging. Logs are written to:
 - Backend: `npm start`
 - Frontend: `npm run build && npm start`
 
-## Notes
+## Security Notes
 
-- CORS is not configured as per requirements
-- All server-side requests are logged using express-winston
-- Error handling middleware is set up for proper error responses
-- MongoDB connection includes error handling and automatic reconnection
+- No CORS configured (as per requirements)
+- Student system is completely anonymous
+- No personal data collected from students
+- JWT tokens for admin authentication
+- Passwords hashed with bcrypt
+- Compound unique indexes prevent duplicate submissions
 
+## Important Notes
+
+- Students are anonymous - no authentication required
+- Student IDs are browser-bound and expire after 2 days
+- One submission per course per student ID (enforced by unique index)
+- Partial submissions allowed (survey and feedback can be submitted separately)
+- System is statistical, not forensic - designed for aggregate analysis
