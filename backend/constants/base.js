@@ -1,7 +1,6 @@
 /**
- * Legacy Constants File
- * @deprecated Use constants/index.js instead
- * This file is kept for backward compatibility
+ * Base Constants
+ * Core constants used across the backend
  */
 
 // Likert Scale Enum
@@ -25,6 +24,6 @@ export const LikertLabels = {
 // Student ID Expiry (2 days in milliseconds)
 export const STUDENT_ID_EXPIRY_MS = 2 * 24 * 60 * 60 * 1000
 
-// Re-export from new constants structure
-export * from './constants/index.js'
+// JWT Secret (should be in .env)
+export const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 

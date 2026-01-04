@@ -24,7 +24,7 @@ app.use(cors())
 app.use(requestLogger)
 
 // Routes
-app.use('/', routes)
+app.use('/api', routes)
 app.use('/api', studentRoutes)
 app.use('/api', adminRoutes)
 

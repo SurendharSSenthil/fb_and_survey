@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, STUDENT_ID_EXPIRY_MS } from './constants.js'
+import { STORAGE_KEYS, STUDENT_ID_EXPIRY_MS } from './constants/index.js'
 
 /**
  * Get student session from localStorage

@@ -1,29 +1,9 @@
-// Likert Scale Enum
-export const LikertScale = {
-  STRONGLY_DISAGREE: 1,
-  DISAGREE: 2,
-  NEUTRAL: 3,
-  AGREE: 4,
-  STRONGLY_AGREE: 5
-}
-
-// Likert Scale Labels
-export const LikertLabels = {
-  1: 'Strongly Disagree',
-  2: 'Disagree',
-  3: 'Neutral',
-  4: 'Agree',
-  5: 'Strongly Agree'
-}
-
-// Student ID Expiry (2 days in milliseconds)
-export const STUDENT_ID_EXPIRY_MS = 2 * 24 * 60 * 60 * 1000
-
-// LocalStorage Keys
-export const STORAGE_KEYS = {
-  STUDENT_SESSION: 'studentSession'
-}
-
-// JWT Secret (should be in .env)
-export const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-
+/**
+ * Backend Constants Index
+ * Central export point for all backend constants
+ */
+export * from './base.js'
+export * from './routes.js'
+export * from './messages.js'
+export * from './status.js'
+export * from './feedbackQuestions.js'
