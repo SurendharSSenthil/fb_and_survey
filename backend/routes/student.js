@@ -3,6 +3,7 @@ import Department from '../models/Department.js'
 import Course from '../models/Course.js'
 import SurveyResponse from '../models/SurveyResponse.js'
 import FeedbackResponse from '../models/FeedbackResponse.js'
+import Student from '../models/Student.js'
 import { generateStudentId } from '../utils/studentIdGenerator.js'
 import logger from '../utils/logger.js'
 
@@ -62,12 +63,29 @@ router.post('/student/generate-id', async (req, res, next) => {
       parseInt(semester)
     )
 
+    const defaultPassword = 'Student'
+
+    try {
+      await Student.create({
+        studentId,
+        password: defaultPassword,
+        deptCode: deptCode.toUpperCase(),
+        year: parseInt(year),
+        semester: parseInt(semester)
+      })
+    } catch (error) {
+      if (error.code !== 11000) {
+        throw error
+      }
+    }
+
     logger.info(`Generated student ID: ${studentId}`)
 
     res.json({
       success: true,
       data: {
         studentId,
+        password: defaultPassword,
         issuedAt: Date.now()
       }
     })
@@ -186,8 +204,15 @@ router.post('/student/submit', async (req, res, next) => {
       return answers.every(a => questionIds.has(a.questionId))
     }
 
-    // Submit survey if answers provided
+    // Submit survey
     if (surveyAnswers && surveyAnswers.length > 0) {
+      if (surveyAnswers.length !== (course.surveyQuestions?.length || 0)) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'Please answer all survey questions' }
+        })
+      }
+
       // Validate question IDs
       if (!validateQuestionIds(surveyAnswers, course.surveyQuestions)) {
         return res.status(400).json({
@@ -223,8 +248,15 @@ router.post('/student/submit', async (req, res, next) => {
       logger.info(`Survey submitted for course ${courseId} by student ${studentId}`)
     }
 
-    // Submit feedback if answers provided
+    // Submit feedback
     if (feedbackAnswers && feedbackAnswers.length > 0) {
+      if (feedbackAnswers.length !== (course.feedbackQuestions?.length || 0)) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'Please answer all feedback questions' }
+        })
+      }
+
       // Validate question IDs
       if (!validateQuestionIds(feedbackAnswers, course.feedbackQuestions)) {
         return res.status(400).json({

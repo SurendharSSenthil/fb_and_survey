@@ -1,5 +1,4 @@
 import express from 'express'
-import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import PDFDocument from 'pdfkit'
 import Admin from '../models/Admin.js'
@@ -36,8 +35,7 @@ router.post('/admin/login', async (req, res, next) => {
       })
     }
 
-    const isPasswordValid = await bcrypt.compare(password, admin.passwordHash)
-    if (!isPasswordValid) {
+    if (password !== admin.password) {
       logger.warn(`Failed login attempt for username: ${username}`)
       return res.status(401).json({
         success: false,
@@ -182,7 +180,7 @@ router.post('/admin/course', authenticateAdmin, async (req, res, next) => {
       semester: parseInt(semester),
       year: parseInt(year),
       surveyQuestions: surveyQuestions || [],
-      feedbackQuestions: STANDARD_FEEDBACK_QUESTIONS, // Always use standard feedback questions
+      feedbackQuestions: feedbackQuestions || STANDARD_FEEDBACK_QUESTIONS,
       isActive: isActive !== undefined ? isActive : true
     })
 
@@ -221,8 +219,7 @@ router.put('/admin/course/:id', authenticateAdmin, async (req, res, next) => {
     if (courseCode) course.courseCode = courseCode.toUpperCase()
     if (courseName) course.courseName = courseName
     if (surveyQuestions !== undefined) course.surveyQuestions = surveyQuestions
-    // Feedback questions are always standard - ignore any updates
-    course.feedbackQuestions = STANDARD_FEEDBACK_QUESTIONS
+    if (feedbackQuestions !== undefined) course.feedbackQuestions = feedbackQuestions
     if (isActive !== undefined) course.isActive = isActive
 
     await course.save()
@@ -267,6 +264,8 @@ router.get('/admin/course/:id', authenticateAdmin, async (req, res, next) => {
         courseId: course._id.toString(),
         courseCode: course.courseCode,
         courseName: course.courseName,
+        surveyQuestions: course.surveyQuestions,
+        feedbackQuestions: course.feedbackQuestions,
         survey: {
           totalResponses: surveyResponses.length,
           questionStats: surveyStats

@@ -10,7 +10,7 @@ const counterSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 1,
-    max: 2
+    max: 8
   },
   year: {
     type: Number,

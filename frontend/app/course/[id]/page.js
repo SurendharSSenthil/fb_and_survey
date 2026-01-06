@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { Card, Button, Space, Typography, Alert, Spin, Row, Col, Statistic, Divider, Table } from 'antd'
+import { Card, Button, Space, Typography, Alert, Spin, Row, Col, Statistic, Divider, Table, Modal, Input } from 'antd'
 import { ArrowLeftOutlined, DownloadOutlined, LogoutOutlined } from '@ant-design/icons'
 import api from '../../../lib/api'
 import { LikertLabels } from '../../../lib/constants'
@@ -22,6 +22,10 @@ export default function CourseDetailPage () {
   const [downloadingFeedback, setDownloadingFeedback] = useState(false)
   const [error, setError] = useState(null)
   const [courseData, setCourseData] = useState(null)
+
+  const [isEditQuestionsOpen, setIsEditQuestionsOpen] = useState(false)
+  const [questionEdits, setQuestionEdits] = useState({ surveyQuestions: [], feedbackQuestions: [] })
+  const [savingQuestions, setSavingQuestions] = useState(false)
 
   useEffect(() => {
     if (courseId) {
@@ -55,6 +59,45 @@ export default function CourseDetailPage () {
   const handleLogout = () => {
     localStorage.removeItem(STORAGE_KEYS.ADMIN_TOKEN)
     router.push(Routes.ADMIN)
+  }
+
+  const openEditQuestions = () => {
+    if (!courseData) return
+    setQuestionEdits({
+      surveyQuestions: courseData.surveyQuestions || [],
+      feedbackQuestions: courseData.feedbackQuestions || []
+    })
+    setIsEditQuestionsOpen(true)
+  }
+
+  const handleSaveQuestions = async () => {
+    try {
+      setSavingQuestions(true)
+      setError(null)
+
+      const token = localStorage.getItem(STORAGE_KEYS.ADMIN_TOKEN)
+      if (!token) {
+        router.push(Routes.ADMIN)
+        return
+      }
+
+      const surveyQuestions = (questionEdits.surveyQuestions || []).filter(q => q.text && q.text.trim())
+      const feedbackQuestions = (questionEdits.feedbackQuestions || []).filter(q => q.text && q.text.trim())
+
+      await api.put(API_ENDPOINTS.ADMIN.COURSE_UPDATE(courseId), {
+        surveyQuestions,
+        feedbackQuestions
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      setIsEditQuestionsOpen(false)
+      await loadCourseData()
+    } catch (err) {
+      setError(err.message || Messages.ERROR_GENERIC)
+    } finally {
+      setSavingQuestions(false)
+    }
   }
 
   const handleDownloadSurveySamples = async () => {
@@ -187,7 +230,7 @@ export default function CourseDetailPage () {
         questions: categoryQuestions.length,
         average: categoryAverage.toFixed(2),
         percentage: categoryPercentage.toFixed(2),
-        responses: totalResponses
+        responses: totalResponses/categoryQuestions?.length
       }
     }).filter(Boolean)
   }
@@ -360,6 +403,9 @@ export default function CourseDetailPage () {
               </Col>
             </Row>
             <Space wrap>
+              <Button onClick={openEditQuestions}>
+                Edit Questions
+              </Button>
               <Button
                 type='primary'
                 icon={<DownloadOutlined />}
@@ -525,6 +571,54 @@ export default function CourseDetailPage () {
             </Space>
           </Card>
         )}
+
+        <Modal
+          title='Edit Course Questions'
+          open={isEditQuestionsOpen}
+          onCancel={() => setIsEditQuestionsOpen(false)}
+          onOk={handleSaveQuestions}
+          okText='Save'
+          confirmLoading={savingQuestions}
+          width={900}
+        >
+          <Divider>Survey Questions</Divider>
+          <Space direction='vertical' style={{ width: '100%' }} size='small'>
+            {(questionEdits.surveyQuestions || []).map((q, idx) => (
+              <Input
+                key={q.questionId}
+                value={q.text}
+                onChange={(e) => {
+                  const updated = [...questionEdits.surveyQuestions]
+                  updated[idx] = { ...updated[idx], text: e.target.value }
+                  setQuestionEdits({ ...questionEdits, surveyQuestions: updated })
+                }}
+                placeholder={`Survey Question ${idx + 1}`}
+              />
+            ))}
+            {(!questionEdits.surveyQuestions || questionEdits.surveyQuestions.length === 0) && (
+              <Alert type='info' message='No survey questions configured for this course.' />
+            )}
+          </Space>
+
+          <Divider>Feedback Questions</Divider>
+          <Space direction='vertical' style={{ width: '100%' }} size='small'>
+            {(questionEdits.feedbackQuestions || []).map((q, idx) => (
+              <Input
+                key={q.questionId}
+                value={q.text}
+                onChange={(e) => {
+                  const updated = [...questionEdits.feedbackQuestions]
+                  updated[idx] = { ...updated[idx], text: e.target.value }
+                  setQuestionEdits({ ...questionEdits, feedbackQuestions: updated })
+                }}
+                placeholder={`Feedback Question ${idx + 1}`}
+              />
+            ))}
+            {(!questionEdits.feedbackQuestions || questionEdits.feedbackQuestions.length === 0) && (
+              <Alert type='info' message='No feedback questions configured for this course.' />
+            )}
+          </Space>
+        </Modal>
       </ResponsiveLayout>
     </AppLayout>
   )

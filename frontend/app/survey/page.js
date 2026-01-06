@@ -24,6 +24,8 @@ export default function SurveyPage () {
   const [answers, setAnswers] = useState({})
   const [studentId, setStudentId] = useState(null)
 
+  const likertOrder = [5, 4, 3, 2, 1]
+
   useEffect(() => {
     const session = getStudentSession()
     if (!session) {
@@ -62,10 +64,10 @@ export default function SurveyPage () {
     if (!course || !studentId) return
 
     const surveyQuestions = course.surveyQuestions || []
-    const answeredQuestions = surveyQuestions.filter(q => answers[q.questionId])
 
-    if (answeredQuestions.length === 0) {
-      setError('Please answer at least one question')
+    const unanswered = surveyQuestions.filter(q => !answers[q.questionId])
+    if (surveyQuestions.length > 0 && unanswered.length > 0) {
+      setError('Please answer all questions')
       return
     }
 
@@ -73,7 +75,7 @@ export default function SurveyPage () {
       setSubmitting(true)
       setError(null)
 
-      const surveyAnswersArray = answeredQuestions.map(q => ({
+      const surveyAnswersArray = surveyQuestions.map(q => ({
         questionId: q.questionId,
         value: answers[q.questionId]
       }))
@@ -173,9 +175,9 @@ export default function SurveyPage () {
                   })}
                 >
                   <Space direction='vertical' style={{ width: '100%' }}>
-                    {Object.entries(LikertLabels).map(([value, label]) => (
-                      <Radio key={value} value={parseInt(value)} style={{ display: 'block', padding: '4px 0' }}>
-                        {label}
+                    {likertOrder.map((value) => (
+                      <Radio key={value} value={value} style={{ display: 'block', padding: '4px 0' }}>
+                        {LikertLabels[value]}
                       </Radio>
                     ))}
                   </Space>

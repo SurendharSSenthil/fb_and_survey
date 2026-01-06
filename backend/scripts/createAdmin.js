@@ -1,5 +1,4 @@
 import mongoose from 'mongoose'
-import bcrypt from 'bcryptjs'
 import dotenv from 'dotenv'
 import Admin from '../models/Admin.js'
 
@@ -29,13 +28,10 @@ const createAdmin = async () => {
       process.exit(1)
     }
 
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, 10)
-
     // Create admin
     const admin = await Admin.create({
       username: username.toLowerCase(),
-      passwordHash
+      password
     })
 
     console.log(`Admin created successfully: ${admin.username}`)
