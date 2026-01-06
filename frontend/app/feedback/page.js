@@ -27,6 +27,12 @@ export default function FeedbackPage () {
   const [recommendation, setRecommendation] = useState('')
   const [studentId, setStudentId] = useState(null)
 
+  const likertOrder = [5, 4, 3, 2, 1]
+
+  const feedbackQuestions = course && course.feedbackQuestions && course.feedbackQuestions.length > 0
+    ? course.feedbackQuestions
+    : STANDARD_FEEDBACK_QUESTIONS
+
   useEffect(() => {
     const session = getStudentSession()
     if (!session) {
@@ -64,12 +70,9 @@ export default function FeedbackPage () {
   const handleSubmit = async () => {
     if (!course || !studentId) return
 
-    // Use standard feedback questions
-    const feedbackQuestions = STANDARD_FEEDBACK_QUESTIONS
-    const answeredQuestions = feedbackQuestions.filter(q => answers[q.questionId])
-
-    if (answeredQuestions.length === 0) {
-      setError('Please answer at least one question')
+    const unanswered = feedbackQuestions.filter(q => !answers[q.questionId])
+    if (feedbackQuestions.length > 0 && unanswered.length > 0) {
+      setError('Please answer all questions')
       return
     }
 
@@ -77,7 +80,7 @@ export default function FeedbackPage () {
       setSubmitting(true)
       setError(null)
 
-      const feedbackAnswersArray = answeredQuestions.map(q => ({
+      const feedbackAnswersArray = feedbackQuestions.map(q => ({
         questionId: q.questionId,
         value: answers[q.questionId]
       }))
@@ -164,7 +167,7 @@ export default function FeedbackPage () {
 
         <Card>
           <Space direction='vertical' style={{ width: '100%' }} size='middle'>
-            {STANDARD_FEEDBACK_QUESTIONS.map((question, index) => (
+            {feedbackQuestions.map((question, index) => (
               <Card key={question.questionId} size='small' style={{ background: '#fafafa' }}>
                 <Text strong style={{ fontSize: '15px' }}>
                   {index + 1}. {question.text}
@@ -178,9 +181,9 @@ export default function FeedbackPage () {
                   })}
                 >
                   <Space direction='vertical' style={{ width: '100%' }}>
-                    {Object.entries(LikertLabels).map(([value, label]) => (
-                      <Radio key={value} value={parseInt(value)} style={{ display: 'block', padding: '4px 0' }}>
-                        {label}
+                    {likertOrder.map((value) => (
+                      <Radio key={value} value={value} style={{ display: 'block', padding: '4px 0' }}>
+                        {LikertLabels[value]}
                       </Radio>
                     ))}
                   </Space>

@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { Layout, Card, Form, Input, Button, Table, Select, Space, Typography, Alert, Statistic, Row, Col, List, Divider, Modal } from 'antd'
-import { LoginOutlined, LogoutOutlined, PlusOutlined, DeleteOutlined, LockOutlined, DownloadOutlined } from '@ant-design/icons'
+import { LoginOutlined, LogoutOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useRouter } from 'next/navigation'
 import api from '../../lib/api'
 import { LikertLabels } from '../../lib/constants'
-import { STANDARD_FEEDBACK_QUESTIONS } from '../../lib/standardFeedbackQuestions'
 
 const { Header, Content } = Layout
 const { Title, Text } = Typography
@@ -18,6 +17,7 @@ export default function AdminPage () {
   const [token, setToken] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [checkedAuth, setCheckedAuth] = useState(false)
 
   // Login form
   const [loginForm] = Form.useForm()
@@ -55,6 +55,10 @@ export default function AdminPage () {
       if (savedToken) {
         setToken(savedToken)
         setIsLoggedIn(true)
+        setCheckedAuth(true)
+      } else {
+        setCheckedAuth(true)
+        router.push('/login')
       }
     }
   }, [])
@@ -89,7 +93,7 @@ export default function AdminPage () {
     localStorage.removeItem('adminToken')
     setDepartments([])
     setCourses([])
-    setReports([])
+    router.push('/')
   }
 
   const loadDepartments = async () => {
@@ -244,6 +248,7 @@ export default function AdminPage () {
       year: new Date().getFullYear(),
       semester: 1,
       surveyQuestions: [],
+      feedbackQuestions: [],
       isActive: true
     })
     setIsCourseModalOpen(true)
@@ -280,6 +285,33 @@ export default function AdminPage () {
     })
   }
 
+  const handleAddFeedbackQuestion = () => {
+    const questionId = `FQ${Date.now()}`
+    setCourseFormData({
+      ...courseFormData,
+      feedbackQuestions: [
+        ...courseFormData.feedbackQuestions,
+        { questionId, text: '' }
+      ]
+    })
+  }
+
+  const handleRemoveFeedbackQuestion = (index) => {
+    setCourseFormData({
+      ...courseFormData,
+      feedbackQuestions: courseFormData.feedbackQuestions.filter((_, i) => i !== index)
+    })
+  }
+
+  const handleUpdateFeedbackQuestion = (index, text) => {
+    const updated = [...courseFormData.feedbackQuestions]
+    updated[index] = { ...updated[index], text }
+    setCourseFormData({
+      ...courseFormData,
+      feedbackQuestions: updated
+    })
+  }
+
 
   const handleCreateCourse = async () => {
     if (!courseFormData.courseCode || !courseFormData.courseName || !courseFormData.deptCode) {
@@ -293,7 +325,7 @@ export default function AdminPage () {
 
       // Filter out empty questions
       const surveyQuestions = courseFormData.surveyQuestions.filter(q => q.text.trim())
-      // Feedback questions are standard and handled by backend
+      const feedbackQuestions = courseFormData.feedbackQuestions.filter(q => q.text.trim())
 
       await api.post('/api/admin/course', {
         courseCode: courseFormData.courseCode,
@@ -302,7 +334,7 @@ export default function AdminPage () {
         year: courseFormData.year,
         semester: courseFormData.semester,
         surveyQuestions,
-        // feedbackQuestions not sent - backend uses standard questions
+        feedbackQuestions,
         isActive: courseFormData.isActive
       }, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
@@ -321,42 +353,8 @@ export default function AdminPage () {
     }
   }
 
-  if (!isLoggedIn) {
-    return (
-      <Layout style={{ minHeight: '100vh' }}>
-        <Content style={{ padding: '50px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <Card style={{ width: '400px' }}>
-            <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>
-              Admin Login
-            </Title>
-            {error && (
-              <Alert message={error} type='error' style={{ marginBottom: 16 }} />
-            )}
-            <Form form={loginForm} onFinish={handleLogin} layout='vertical'>
-              <Form.Item
-                name='username'
-                label='Username'
-                rules={[{ required: true, message: 'Please enter username' }]}
-              >
-                <Input />
-              </Form.Item>
-              <Form.Item
-                name='password'
-                label='Password'
-                rules={[{ required: true, message: 'Please enter password' }]}
-              >
-                <Input.Password />
-              </Form.Item>
-              <Form.Item>
-                <Button type='primary' htmlType='submit' block loading={loading}>
-                  Login
-                </Button>
-              </Form.Item>
-            </Form>
-          </Card>
-        </Content>
-      </Layout>
-    )
+  if (!checkedAuth || !isLoggedIn) {
+    return null
   }
 
   return (
@@ -651,38 +649,43 @@ export default function AdminPage () {
               </Space>
             </div>
 
-            <Divider>
-              <Space>
-                <LockOutlined />
-                <Text strong>Standard Feedback Questions (Fixed for all courses)</Text>
-              </Space>
-            </Divider>
+            <Divider>Feedback Questions</Divider>
             <div>
-              <Alert
-                message='These feedback questions are standard and cannot be modified. They will be automatically included for all courses.'
-                type='info'
-                showIcon
-                style={{ marginBottom: 16 }}
-              />
-              <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #f0f0f0', borderRadius: '4px', padding: '12px' }}>
-                <Space direction='vertical' style={{ width: '100%' }} size='small'>
-                  {STANDARD_FEEDBACK_QUESTIONS.map((question, index) => (
-                    <div
-                      key={question.questionId}
-                      style={{
-                        padding: '8px 12px',
-                        background: '#fafafa',
-                        borderRadius: '4px',
-                        border: '1px solid #e8e8e8'
-                      }}
-                    >
-                      <Text>
-                        <Text strong>{index + 1}.</Text> {question.text}
-                      </Text>
-                    </div>
-                  ))}
-                </Space>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Text strong>Feedback Questions</Text>
+                <Button
+                  type='dashed'
+                  icon={<PlusOutlined />}
+                  onClick={handleAddFeedbackQuestion}
+                  size='small'
+                >
+                  Add Question
+                </Button>
               </div>
+              <Space direction='vertical' style={{ width: '100%' }} size='middle'>
+                {courseFormData.feedbackQuestions.map((question, index) => (
+                  <Card key={question.questionId} size='small'>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <Input
+                        placeholder={`Feedback Question ${index + 1}`}
+                        value={question.text}
+                        onChange={(e) => handleUpdateFeedbackQuestion(index, e.target.value)}
+                        style={{ flex: 1 }}
+                      />
+                      <Button
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleRemoveFeedbackQuestion(index)}
+                      />
+                    </div>
+                  </Card>
+                ))}
+                {courseFormData.feedbackQuestions.length === 0 && (
+                  <Text type='secondary' style={{ fontStyle: 'italic' }}>
+                    No feedback questions added. Click "Add Question" to add one.
+                  </Text>
+                )}
+              </Space>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>

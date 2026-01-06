@@ -3,6 +3,11 @@
  * Centralized API endpoint definitions
  */
 export const API_ENDPOINTS = {
+  // Auth endpoints
+  AUTH: {
+    LOGIN: '/api/auth/login'
+  },
+
   // Student endpoints
   STUDENT: {
     GENERATE_ID: '/api/student/generate-id',

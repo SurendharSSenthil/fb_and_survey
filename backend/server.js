@@ -9,6 +9,7 @@ import notFound from './middleware/notFound.js'
 import routes from './routes/index.js'
 import studentRoutes from './routes/student.js'
 import adminRoutes from './routes/admin.js'
+import authRoutes from './routes/auth.js'
 
 // Load environment variables
 dotenv.config()
@@ -25,6 +26,7 @@ app.use(requestLogger)
 
 // Routes
 app.use('/api', routes)
+app.use('/api', authRoutes)
 app.use('/api', studentRoutes)
 app.use('/api', adminRoutes)
 

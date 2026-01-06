@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Layout, Select, Button, Card, Space, Typography, Alert, Spin, Row, Col, Tag } from 'antd'
-import { CheckCircleOutlined, FileTextOutlined, MessageOutlined } from '@ant-design/icons'
+import { Layout, Select, Button, Card, Space, Typography, Alert, Spin, Row, Col, Tag, InputNumber } from 'antd'
+import { CheckCircleOutlined, FileTextOutlined, MessageOutlined, LogoutOutlined } from '@ant-design/icons'
 import api from '../../lib/api'
 import { getStudentSession, saveStudentSession, clearStudentSession, isSessionExpired } from '../../lib/utils'
 import { 
@@ -61,6 +61,15 @@ export default function StudentPage () {
     }
     loadDepartments()
   }, [])
+
+  const handleLogout = () => {
+    clearStudentSession()
+    setStudentId(null)
+    setStudentSession(null)
+    setCourses([])
+    setCourseStatus([])
+    router.push(Routes.HOME)
+  }
 
   const loadDepartments = async () => {
     try {
@@ -204,16 +213,15 @@ export default function StudentPage () {
                 <Col span={12}>
                   <div>
                     <Text strong style={{ fontSize: '14px' }}>Year</Text>
-                    <Select
+                    <InputNumber
                       style={{ width: '100%', marginTop: 8 }}
                       size='large'
                       value={selectedYear}
                       onChange={setSelectedYear}
-                    >
-                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                        <Select.Option key={year} value={year}>{year}</Select.Option>
-                      ))}
-                    </Select>
+                      min={2000}
+                      max={3000}
+                      placeholder='Enter Year'
+                    />
                   </div>
                 </Col>
                 <Col span={12}>
@@ -247,6 +255,15 @@ export default function StudentPage () {
                 style={{ marginTop: 8, height: '48px' }}
               >
                 Continue
+              </Button>
+
+              <Button
+                block
+                size='large'
+                onClick={() => router.push('/login')}
+                style={{ height: '48px' }}
+              >
+                Login if already generated the ID
               </Button>
             </Space>
           </Card>
@@ -298,6 +315,10 @@ export default function StudentPage () {
         }}>
           ID: {studentId}
         </Tag>
+
+        <Button icon={<LogoutOutlined />} onClick={handleLogout}>
+          Logout
+        </Button>
       </Header>
       <Content className={CSS_CLASSES.STUDENT_CONTENT} style={{ 
         padding: `${UI.SPACING.MD}px`,

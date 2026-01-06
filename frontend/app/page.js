@@ -16,7 +16,7 @@ export default function Home () {
   }
 
   const handleAdminClick = () => {
-    router.push(Routes.ADMIN)
+    router.push('/login')
   }
 
   return (
