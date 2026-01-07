@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Card, Radio, Button, Input, Space, Typography, Alert, Spin } from 'antd'
+import { Card, Radio, Button, Input, Space, Typography, Alert, Spin, notification } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import api from '../../lib/api'
 import { getStudentSession } from '../../lib/utils'
@@ -70,11 +70,18 @@ export default function FeedbackPage () {
   const handleSubmit = async () => {
     if (!course || !studentId) return
 
-    const unanswered = feedbackQuestions.filter(q => !answers[q.questionId])
-    if (feedbackQuestions.length > 0 && unanswered.length > 0) {
-      setError('Please answer all questions')
-      return
-    }
+    const unanswered = feedbackQuestions.filter(
+  q => answers[q.questionId] === undefined
+)
+
+if (unanswered.length > 0) {
+  notification.error({
+    message: 'Incomplete Feedback',
+    description: 'Please answer all questions before submitting.',
+    placement: 'topRight',
+  })
+  return
+}
 
     try {
       setSubmitting(true)

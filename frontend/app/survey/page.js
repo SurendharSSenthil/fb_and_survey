@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Card, Radio, Button, Space, Typography, Alert, Spin } from 'antd'
+import { Card, Radio, Button, Space, Typography, Alert, Spin, notification } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import api from '../../lib/api'
 import { getStudentSession } from '../../lib/utils'
@@ -65,11 +65,19 @@ export default function SurveyPage () {
 
     const surveyQuestions = course.surveyQuestions || []
 
-    const unanswered = surveyQuestions.filter(q => !answers[q.questionId])
-    if (surveyQuestions.length > 0 && unanswered.length > 0) {
-      setError('Please answer all questions')
-      return
-    }
+    const unanswered = surveyQuestions.filter(
+  q => !answers[q.questionId] 
+)
+
+if (unanswered.length > 0) {
+  notification.error({
+    message: 'Incomplete survey!',
+    description: 'Please answer all questions before submitting.',
+    placement: 'topRight',
+  })
+  return
+}
+
 
     try {
       setSubmitting(true)
