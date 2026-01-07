@@ -238,6 +238,38 @@ router.put('/admin/course/:id', authenticateAdmin, async (req, res, next) => {
   }
 })
 
+// DELETE /api/admin/course/:id
+router.delete('/admin/course/:id', authenticateAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params
+
+    const course = await Course.findById(id)
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'Course not found' }
+      })
+    }
+
+    await Promise.all([
+      SurveyResponse.deleteMany({ courseId: course._id }),
+      FeedbackResponse.deleteMany({ courseId: course._id })
+    ])
+
+    await Course.deleteOne({ _id: course._id })
+
+    logger.info(`Course deleted: ${course.courseCode} by admin ${req.admin.username}`)
+
+    return res.json({
+      success: true,
+      data: { courseId: course._id.toString() }
+    })
+  } catch (error) {
+    logger.error('Error deleting course:', error)
+    next(error)
+  }
+})
+
 // GET /api/admin/course/:id
 router.get('/admin/course/:id', authenticateAdmin, async (req, res, next) => {
   try {

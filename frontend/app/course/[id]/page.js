@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Card, Button, Space, Typography, Alert, Spin, Row, Col, Statistic, Divider, Table, Modal, Input } from 'antd'
-import { ArrowLeftOutlined, DownloadOutlined, LogoutOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, DownloadOutlined, LogoutOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons'
 import api from '../../../lib/api'
 import { LikertLabels } from '../../../lib/constants'
 import { Routes, API_ENDPOINTS, STORAGE_KEYS, Messages, UI, FEEDBACK_CATEGORIES, likertToPercentage, getCOLabel, getStudentsAbove60 } from '../../../lib/constants/index.js'
@@ -12,7 +12,7 @@ import ResponsiveLayout from '../../../components/ResponsiveLayout'
 
 const { Title, Text } = Typography
 
-export default function CourseDetailPage () {
+export default function CourseDetailPage() {
   const router = useRouter()
   const params = useParams()
   const courseId = params.id
@@ -68,6 +68,36 @@ export default function CourseDetailPage () {
       feedbackQuestions: courseData.feedbackQuestions || []
     })
     setIsEditQuestionsOpen(true)
+  }
+
+  const addSurveyQuestion = () => {
+    const questionId = `SQ${Date.now()}`
+    setQuestionEdits(prev => ({
+      ...prev,
+      surveyQuestions: [...(prev.surveyQuestions || []), { questionId, text: '' }]
+    }))
+  }
+
+  const removeSurveyQuestion = (index) => {
+    setQuestionEdits(prev => ({
+      ...prev,
+      surveyQuestions: (prev.surveyQuestions || []).filter((_, i) => i !== index)
+    }))
+  }
+
+  const addFeedbackQuestion = () => {
+    const questionId = `FQ${Date.now()}`
+    setQuestionEdits(prev => ({
+      ...prev,
+      feedbackQuestions: [...(prev.feedbackQuestions || []), { questionId, text: '' }]
+    }))
+  }
+
+  const removeFeedbackQuestion = (index) => {
+    setQuestionEdits(prev => ({
+      ...prev,
+      feedbackQuestions: (prev.feedbackQuestions || []).filter((_, i) => i !== index)
+    }))
   }
 
   const handleSaveQuestions = async () => {
@@ -188,10 +218,41 @@ export default function CourseDetailPage () {
     }
   }
 
+  const handleDeleteCourse = () => {
+    Modal.confirm({
+      title: 'Delete course?',
+      content: 'This will delete the course and its submitted survey/feedback responses.',
+      okText: 'Delete',
+      okButtonProps: { danger: true },
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          setLoading(true)
+          setError(null)
+
+          const token = localStorage.getItem(STORAGE_KEYS.ADMIN_TOKEN)
+          if (!token) {
+            router.push(Routes.ADMIN)
+            return
+          }
+
+          await api.delete(API_ENDPOINTS.ADMIN.COURSE_DELETE(courseId), {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+
+          router.push(Routes.ADMIN)
+        } catch (err) {
+          setError(err.message || 'Failed to delete course')
+          setLoading(false)
+        }
+      }
+    })
+  }
+
   // Prepare survey table data with CO mapping
   const getSurveyTableData = () => {
     if (!courseData?.survey?.questionStats) return []
-    
+
     return Object.entries(courseData.survey.questionStats).map(([qId, stats], index) => {
       const percentage = likertToPercentage(stats.average)
       const studentsAbove60 = getStudentsAbove60(stats.distribution)
@@ -211,26 +272,26 @@ export default function CourseDetailPage () {
   // Prepare feedback category table data
   const getFeedbackCategoryData = () => {
     if (!courseData?.feedback?.questionStats) return []
-    
+
     return FEEDBACK_CATEGORIES.map(category => {
       const categoryQuestions = category.questions
       const categoryStats = categoryQuestions
         .map(qId => courseData.feedback.questionStats[qId])
         .filter(Boolean)
-      
+
       if (categoryStats.length === 0) return null
-      
+
       const categoryAverage = categoryStats.reduce((sum, stat) => sum + stat.average, 0) / categoryStats.length
       const categoryPercentage = likertToPercentage(categoryAverage)
       const totalResponses = categoryStats.reduce((sum, stat) => sum + stat.count, 0)
-      
+
       return {
         key: category.id,
         category: category.name,
         questions: categoryQuestions.length,
         average: categoryAverage.toFixed(2),
         percentage: categoryPercentage.toFixed(2),
-        responses: totalResponses/categoryQuestions?.length
+        responses: totalResponses / categoryQuestions?.length
       }
     }).filter(Boolean)
   }
@@ -362,7 +423,7 @@ export default function CourseDetailPage () {
   const feedbackCategoryData = getFeedbackCategoryData()
 
   return (
-    <AppLayout 
+    <AppLayout
       showHeader={true}
       showFooter={true}
       headerContent={
@@ -421,6 +482,13 @@ export default function CourseDetailPage () {
                 loading={downloadingFeedback}
               >
                 Download Feedback Samples
+              </Button>
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                onClick={handleDeleteCourse}
+              >
+                Delete Course
               </Button>
             </Space>
           </Space>
@@ -531,9 +599,9 @@ export default function CourseDetailPage () {
                     return stats ? { questionId: qId, ...stats } : null
                   })
                   .filter(Boolean)
-                
+
                 if (categoryQuestions.length === 0) return null
-                
+
                 return (
                   <Card key={category.id} size='small' style={{ background: '#fafafa' }}>
                     <Title level={5} style={{ marginBottom: 12 }}>{category.name}</Title>
@@ -582,18 +650,25 @@ export default function CourseDetailPage () {
           width={900}
         >
           <Divider>Survey Questions</Divider>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+            <Button icon={<PlusOutlined />} onClick={addSurveyQuestion}>
+              Add Survey Question
+            </Button>
+          </div>
           <Space direction='vertical' style={{ width: '100%' }} size='small'>
             {(questionEdits.surveyQuestions || []).map((q, idx) => (
-              <Input
-                key={q.questionId}
-                value={q.text}
-                onChange={(e) => {
-                  const updated = [...questionEdits.surveyQuestions]
-                  updated[idx] = { ...updated[idx], text: e.target.value }
-                  setQuestionEdits({ ...questionEdits, surveyQuestions: updated })
-                }}
-                placeholder={`Survey Question ${idx + 1}`}
-              />
+              <div key={q.questionId} style={{ display: 'flex', gap: 8 }}>
+                <Input
+                  value={q.text}
+                  onChange={(e) => {
+                    const updated = [...questionEdits.surveyQuestions]
+                    updated[idx] = { ...updated[idx], text: e.target.value }
+                    setQuestionEdits({ ...questionEdits, surveyQuestions: updated })
+                  }}
+                  placeholder={`Survey Question ${idx + 1}`}
+                />
+                <Button danger icon={<DeleteOutlined />} onClick={() => removeSurveyQuestion(idx)} />
+              </div>
             ))}
             {(!questionEdits.surveyQuestions || questionEdits.surveyQuestions.length === 0) && (
               <Alert type='info' message='No survey questions configured for this course.' />
@@ -601,18 +676,25 @@ export default function CourseDetailPage () {
           </Space>
 
           <Divider>Feedback Questions</Divider>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+            <Button icon={<PlusOutlined />} onClick={addFeedbackQuestion}>
+              Add Feedback Question
+            </Button>
+          </div>
           <Space direction='vertical' style={{ width: '100%' }} size='small'>
             {(questionEdits.feedbackQuestions || []).map((q, idx) => (
-              <Input
-                key={q.questionId}
-                value={q.text}
-                onChange={(e) => {
-                  const updated = [...questionEdits.feedbackQuestions]
-                  updated[idx] = { ...updated[idx], text: e.target.value }
-                  setQuestionEdits({ ...questionEdits, feedbackQuestions: updated })
-                }}
-                placeholder={`Feedback Question ${idx + 1}`}
-              />
+              <div key={q.questionId} style={{ display: 'flex', gap: 8 }}>
+                <Input
+                  value={q.text}
+                  onChange={(e) => {
+                    const updated = [...questionEdits.feedbackQuestions]
+                    updated[idx] = { ...updated[idx], text: e.target.value }
+                    setQuestionEdits({ ...questionEdits, feedbackQuestions: updated })
+                  }}
+                  placeholder={`Feedback Question ${idx + 1}`}
+                />
+                <Button danger icon={<DeleteOutlined />} onClick={() => removeFeedbackQuestion(idx)} />
+              </div>
             ))}
             {(!questionEdits.feedbackQuestions || questionEdits.feedbackQuestions.length === 0) && (
               <Alert type='info' message='No feedback questions configured for this course.' />

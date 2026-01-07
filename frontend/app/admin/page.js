@@ -161,6 +161,34 @@ export default function AdminPage () {
     router.push(`/course/${courseId}`)
   }
 
+  const handleDeleteCourse = (courseId, e) => {
+    e.stopPropagation()
+
+    Modal.confirm({
+      title: 'Delete course?'
+      ,content: 'This will delete the course and its submitted survey/feedback responses.'
+      ,okText: 'Delete'
+      ,okButtonProps: { danger: true }
+      ,cancelText: 'Cancel'
+      ,onOk: async () => {
+        try {
+          setLoading(true)
+          setError(null)
+
+          await api.delete(`/api/admin/course/${courseId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+
+          setCourses(prev => prev.filter(c => c.courseId !== courseId))
+        } catch (err) {
+          setError(err.message || 'Failed to delete course')
+        } finally {
+          setLoading(false)
+        }
+      }
+    })
+  }
+
   const handleDownloadSurveySamples = async (courseId, courseCode, e) => {
     e.stopPropagation() // Prevent card click
     try {
@@ -514,6 +542,15 @@ export default function AdminPage () {
                           block
                         >
                           Feedback Samples
+                        </Button>
+                        <Button
+                          danger
+                          size='small'
+                          icon={<DeleteOutlined />}
+                          onClick={(e) => handleDeleteCourse(course.courseId, e)}
+                          block
+                        >
+                          Delete Course
                         </Button>
                       </Space>
                     </div>

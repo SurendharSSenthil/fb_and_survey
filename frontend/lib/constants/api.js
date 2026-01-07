@@ -15,12 +15,12 @@ export const API_ENDPOINTS = {
     STATUS: '/api/student/status',
     SUBMIT: '/api/student/submit'
   },
-  
+
   // Department endpoints
   DEPARTMENTS: {
     ACTIVE: '/api/departments/active'
   },
-  
+
   // Admin endpoints
   ADMIN: {
     LOGIN: '/api/admin/login',
@@ -29,6 +29,7 @@ export const API_ENDPOINTS = {
     COURSE: '/api/admin/course',
     COURSE_DETAIL: (id) => `/api/admin/course/${id}`,
     COURSE_UPDATE: (id) => `/api/admin/course/${id}`,
+    COURSE_DELETE: (id) => `/api/admin/course/${id}`,
     COURSE_SAMPLES: (id) => `/api/admin/course/${id}/samples`,
     COURSE_SAMPLES_SURVEY: (id) => `/api/admin/course/${id}/samples/survey`,
     COURSE_SAMPLES_FEEDBACK: (id) => `/api/admin/course/${id}/samples/feedback`,
