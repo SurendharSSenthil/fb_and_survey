@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Layout, Card, Form, Input, Button, Table, Select, Space, Typography, Alert, Statistic, Row, Col, List, Divider, Modal } from 'antd'
+import { Layout, Card, Form, Input, Button, Table, Select, Space, Typography, Alert, Statistic, Row, Col, List, Divider, Modal, InputNumber } from 'antd'
 import { LoginOutlined, LogoutOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useRouter } from 'next/navigation'
 import api from '../../lib/api'
 import { LikertLabels } from '../../lib/constants'
+import { STANDARD_FEEDBACK_QUESTIONS } from '../../lib/standardFeedbackQuestions'
 
 const { Header, Content } = Layout
 const { Title, Text } = Typography
@@ -44,7 +45,7 @@ export default function AdminPage () {
     year: new Date().getFullYear(),
     semester: 1,
     surveyQuestions: [],
-    feedbackQuestions: [],
+    feedbackQuestions: STANDARD_FEEDBACK_QUESTIONS.map(q => ({ ...q })),
     isActive: true
   })
 
@@ -248,7 +249,7 @@ export default function AdminPage () {
       year: new Date().getFullYear(),
       semester: 1,
       surveyQuestions: [],
-      feedbackQuestions: [],
+      feedbackQuestions: STANDARD_FEEDBACK_QUESTIONS.map(q => ({ ...q })),
       isActive: true
     })
     setIsCourseModalOpen(true)
@@ -423,15 +424,14 @@ export default function AdminPage () {
                     label: `${dept.code} - ${dept.name}`
                   }))}
                 />
-                <Select
+                <InputNumber
                   style={{ width: '100%' }}
                   value={selectedYear}
                   onChange={setSelectedYear}
-                >
-                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                    <Option key={year} value={year}>{year}</Option>
-                  ))}
-                </Select>
+                  min={2000}
+                  max={3000}
+                  placeholder='Enter Year'
+                />
                 <Select
                   style={{ width: '100%' }}
                   value={selectedSemester}
@@ -554,15 +554,14 @@ export default function AdminPage () {
               <Col span={12}>
                 <div>
                   <Text strong>Year *</Text>
-                  <Select
+                  <InputNumber
                     style={{ width: '100%', marginTop: 8 }}
                     value={courseFormData.year}
                     onChange={(value) => setCourseFormData({ ...courseFormData, year: value })}
-                  >
-                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                      <Option key={year} value={year}>{year}</Option>
-                    ))}
-                  </Select>
+                    min={2000}
+                    max={3000}
+                    placeholder='Enter Year'
+                  />
                 </div>
               </Col>
             </Row>
