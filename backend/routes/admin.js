@@ -180,7 +180,7 @@ router.post('/admin/course', authenticateAdmin, async (req, res, next) => {
       semester: parseInt(semester),
       year: parseInt(year),
       surveyQuestions: surveyQuestions || [],
-      feedbackQuestions: feedbackQuestions || STANDARD_FEEDBACK_QUESTIONS,
+      feedbackQuestions: (feedbackQuestions && feedbackQuestions.length > 0) ? feedbackQuestions : STANDARD_FEEDBACK_QUESTIONS,
       isActive: isActive !== undefined ? isActive : true
     })
 
@@ -219,7 +219,9 @@ router.put('/admin/course/:id', authenticateAdmin, async (req, res, next) => {
     if (courseCode) course.courseCode = courseCode.toUpperCase()
     if (courseName) course.courseName = courseName
     if (surveyQuestions !== undefined) course.surveyQuestions = surveyQuestions
-    if (feedbackQuestions !== undefined) course.feedbackQuestions = feedbackQuestions
+    if (feedbackQuestions !== undefined) {
+      course.feedbackQuestions = (feedbackQuestions && feedbackQuestions.length > 0) ? feedbackQuestions : STANDARD_FEEDBACK_QUESTIONS
+    }
     if (isActive !== undefined) course.isActive = isActive
 
     await course.save()
