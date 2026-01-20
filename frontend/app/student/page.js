@@ -92,7 +92,6 @@ export default function StudentPage() {
 
     try {
       setLoading(true)
-      setError(null)
 
       // Generate student ID
       const response = await api.post(API_ENDPOINTS.STUDENT.GENERATE_ID, {

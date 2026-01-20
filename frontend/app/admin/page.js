@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Layout, Card, Form, Input, Button, Table, Select, Space, Typography, Alert, Statistic, Row, Col, List, Divider, Modal, InputNumber, message, Skeleton } from 'antd'
+import { Layout, Card, Form, Input, Button, Table, Select, Space, Typography, Alert, Statistic, Row, Col, List, Divider, Modal, InputNumber, message, Skeleton, Empty } from 'antd'
 import { LoginOutlined, LogoutOutlined, PlusOutlined, DeleteOutlined, DownloadOutlined, HomeTwoTone } from '@ant-design/icons'
 import { useRouter } from 'next/navigation'
 import api from '../../lib/api'
@@ -35,6 +35,7 @@ export default function AdminPage() {
   const [selectedSemester, setSelectedSemester] = useState(1)
   const [downloadingSurvey, setDownloadingSurvey] = useState({})
   const [downloadingFeedback, setDownloadingFeedback] = useState({})
+  const [hasSearched, setHasSearched] = useState(false)
 
   // Course Creation
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false)
@@ -126,7 +127,12 @@ export default function AdminPage() {
         headers: { Authorization: `Bearer ${token}` }
       })
       setCourses(response.data)
-      message.success('Classes details loaded successfully')
+      setHasSearched(true)
+      if (response.data.length > 0) {
+        message.success('Classes details loaded successfully')
+      } else {
+        message.info('No courses found for the selected criteria')
+      }
     } catch (err) {
       message.error(err.message || 'Failed to load courses')
     } finally {
@@ -470,94 +476,101 @@ export default function AdminPage() {
       </Row>
 
       {/* Courses Display */}
-      {(loading || courses.length > 0) && (
+      {(hasSearched || loading) && (
         <div style={{ marginTop: 24 }}>
           <Title level={3} style={{ marginBottom: 16 }}>Courses</Title>
-          <Row gutter={[16, 16]}>
-            {loading ? (
-              // Skeleton Loader
-              Array.from({ length: 4 }).map((_, index) => (
-                <Col xs={24} sm={12} md={8} lg={6} key={`skeleton-${index}`}>
-                  <Card style={{ height: '100%', minHeight: 200 }}>
-                    <Skeleton active paragraph={{ rows: 4 }} />
-                  </Card>
-                </Col>
-              ))
-            ) : (
-              // Actual Course Data
-              courses.map((course) => (
-                <Col xs={24} sm={12} md={8} lg={6} key={course.courseId}>
-                  <Card
-                    hoverable
-                    onClick={() => handleCourseClick(course.courseId)}
-                    style={{
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      height: '100%'
-                    }}
-                  >
-                    <Title level={4} style={{ marginBottom: 8 }}>
-                      {course.courseCode}
-                    </Title>
-                    <Text type='secondary' style={{ fontSize: '14px' }}>
-                      {course.courseName}
-                    </Text>
-                    <div style={{ marginTop: 12 }}>
-                      <Row gutter={8}>
-                        <Col span={12}>
-                          <Statistic
-                            title='Survey'
-                            value={course.survey?.totalResponses || 0}
-                            valueStyle={{ fontSize: '18px' }}
-                          />
-                        </Col>
-                        <Col span={12}>
-                          <Statistic
-                            title='Feedback'
-                            value={course.feedback?.totalResponses || 0}
-                            valueStyle={{ fontSize: '18px' }}
-                          />
-                        </Col>
-                      </Row>
-                    </div>
-                    <div style={{ marginTop: 12 }}>
-                      <Space direction='vertical' style={{ width: '100%' }} size='small'>
-                        <Button
-                          type='default'
-                          size='small'
-                          icon={<DownloadOutlined />}
-                          onClick={(e) => handleDownloadSurveySamples(course.courseId, course.courseCode, e)}
-                          loading={downloadingSurvey[course.courseId]}
-                          block
-                        >
-                          Survey Samples
-                        </Button>
-                        <Button
-                          type='default'
-                          size='small'
-                          icon={<DownloadOutlined />}
-                          onClick={(e) => handleDownloadFeedbackSamples(course.courseId, course.courseCode, e)}
-                          loading={downloadingFeedback[course.courseId]}
-                          block
-                        >
-                          Feedback Samples
-                        </Button>
-                        <Button
-                          danger
-                          size='small'
-                          icon={<DeleteOutlined />}
-                          onClick={(e) => handleDeleteCourse(course.courseId, e)}
-                          block
-                        >
-                          Delete Course
-                        </Button>
-                      </Space>
-                    </div>
-                  </Card>
-                </Col>
-              ))
-            )}
-          </Row>
+
+          {!loading && courses.length === 0 ? (
+            <Card>
+              <Empty description="No courses found for the selected department, year, and semester." />
+            </Card>
+          ) : (
+            <Row gutter={[16, 16]}>
+              {loading ? (
+                // Skeleton Loader
+                Array.from({ length: 4 }).map((_, index) => (
+                  <Col xs={24} sm={12} md={8} lg={6} key={`skeleton-${index}`}>
+                    <Card style={{ height: '100%', minHeight: 200 }}>
+                      <Skeleton active paragraph={{ rows: 4 }} />
+                    </Card>
+                  </Col>
+                ))
+              ) : (
+                // Actual Course Data
+                courses.map((course) => (
+                  <Col xs={24} sm={12} md={8} lg={6} key={course.courseId}>
+                    <Card
+                      hoverable
+                      onClick={() => handleCourseClick(course.courseId)}
+                      style={{
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        height: '100%'
+                      }}
+                    >
+                      <Title level={4} style={{ marginBottom: 8 }}>
+                        {course.courseCode}
+                      </Title>
+                      <Text type='secondary' style={{ fontSize: '14px' }}>
+                        {course.courseName}
+                      </Text>
+                      <div style={{ marginTop: 12 }}>
+                        <Row gutter={8}>
+                          <Col span={12}>
+                            <Statistic
+                              title='Survey'
+                              value={course.survey?.totalResponses || 0}
+                              valueStyle={{ fontSize: '18px' }}
+                            />
+                          </Col>
+                          <Col span={12}>
+                            <Statistic
+                              title='Feedback'
+                              value={course.feedback?.totalResponses || 0}
+                              valueStyle={{ fontSize: '18px' }}
+                            />
+                          </Col>
+                        </Row>
+                      </div>
+                      <div style={{ marginTop: 12 }}>
+                        <Space direction='vertical' style={{ width: '100%' }} size='small'>
+                          <Button
+                            type='default'
+                            size='small'
+                            icon={<DownloadOutlined />}
+                            onClick={(e) => handleDownloadSurveySamples(course.courseId, course.courseCode, e)}
+                            loading={downloadingSurvey[course.courseId]}
+                            block
+                          >
+                            Survey Samples
+                          </Button>
+                          <Button
+                            type='default'
+                            size='small'
+                            icon={<DownloadOutlined />}
+                            onClick={(e) => handleDownloadFeedbackSamples(course.courseId, course.courseCode, e)}
+                            loading={downloadingFeedback[course.courseId]}
+                            block
+                          >
+                            Feedback Samples
+                          </Button>
+                          <Button
+                            danger
+                            size='small'
+                            icon={<DeleteOutlined />}
+                            onClick={(e) => handleDeleteCourse(course.courseId, e)}
+                            block
+                          >
+                            Delete Course
+                          </Button>
+                        </Space>
+                      </div>
+                    </Card>
+                  </Col>
+                ))
+              )}
+            </Row>
+          )}
         </div>
       )}
 

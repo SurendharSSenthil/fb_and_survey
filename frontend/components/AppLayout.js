@@ -3,7 +3,7 @@
 import { Layout, Typography } from 'antd'
 import { usePathname } from 'next/navigation'
 import { Messages, UI } from '../lib/constants/index.js'
-
+import Link from 'next/link'
 const { Header, Footer } = Layout
 const { Title, Text } = Typography
 
@@ -15,14 +15,23 @@ export default function AppLayout({ children, showHeader = true, showFooter = tr
 
   // Default header content
   const defaultHeaderContent = (
-    <Title level={3} style={{
-      color: '#fff',
-      margin: 0,
-      fontSize: UI.FONT_SIZES.XXL,
-      textAlign: 'center'
-    }}>
-      {Messages.SYSTEM_NAME}
-    </Title>
+    <Link
+      href="/"
+      style={{ textDecoration: 'none', display: 'inline-flex' }}
+    >
+      <Title
+        level={3}
+        style={{
+          color: '#fff',
+          margin: 0,
+          fontSize: UI.FONT_SIZES.XXL,
+          textAlign: 'center',
+          cursor: 'pointer'
+        }}
+      >
+        {Messages.SYSTEM_NAME}
+      </Title>
+    </Link>
   )
 
   const currentYear = new Date().getFullYear()
