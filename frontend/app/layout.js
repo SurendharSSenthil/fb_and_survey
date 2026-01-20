@@ -7,9 +7,10 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata = {
   title: 'FB and Survey',
   description: 'FB and Survey Application'
+
 }
 
-export default function RootLayout ({ children }) {
+export default function RootLayout({ children }) {
   return (
     <html lang='en'>
       <body className={inter.className}>

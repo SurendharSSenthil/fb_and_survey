@@ -2,13 +2,14 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Layout, Card, Table, Typography, Button, Space, Alert, Spin, Row, Col, Statistic } from 'antd'
+import { Layout, Card, Table, Typography, Button, Space, Spin, Row, Col, Statistic, message } from 'antd'
 import { ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons'
 import api from '../../../../lib/api'
 import { FEEDBACK_CATEGORIES, likertToPercentage, getCOLabel, getStudentsAbove60 } from '../../../../lib/constants/feedbackCategories'
 import { UI } from '../../../../lib/constants'
 
-const { Header, Content } = Layout
+import AppLayout from '../../../../components/AppLayout'
+
 const { Title, Text } = Typography
 
 function ClassStatsContent() {
@@ -20,7 +21,6 @@ function ClassStatsContent() {
     const semester = searchParams.get('semester')
 
     const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
     const [data, setData] = useState([])
     const [surveyColumns, setSurveyColumns] = useState([])
 
@@ -35,7 +35,6 @@ function ClassStatsContent() {
     const fetchData = async () => {
         try {
             setLoading(true)
-            setError(null)
 
             const token = localStorage.getItem('adminToken')
             const response = await api.get(`/api/admin/report?deptCode=${deptCode}&year=${year}&semester=${semester}`, {
@@ -99,7 +98,7 @@ function ClassStatsContent() {
             setSurveyColumns(cols)
 
         } catch (err) {
-            setError(err.message || 'Failed to fetch class data')
+            message.error(err.message || 'Failed to fetch class data')
         } finally {
             setLoading(false)
         }
@@ -113,7 +112,6 @@ function ClassStatsContent() {
 
     const handleDownloadPDF = async (type) => {
         try {
-            setError(null)
             const token = localStorage.getItem('adminToken')
             const response = await fetch(`${api.baseURL}/api/admin/report/pdf?deptCode=${deptCode}&year=${year}&semester=${semester}&type=${type}`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -131,7 +129,7 @@ function ClassStatsContent() {
             window.URL.revokeObjectURL(url)
             document.body.removeChild(a)
         } catch (err) {
-            setError(err.message || 'Failed to download PDF')
+            message.error(err.message || 'Failed to download PDF')
         }
     }
 
@@ -229,89 +227,84 @@ function ClassStatsContent() {
         }))
     ]
 
-    return (
-        <div style={{ padding: 24, background: UI.COLORS.BACKGROUND, minHeight: '100vh' }}>
-            <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Space>
-                    <Button icon={<ArrowLeftOutlined />} onClick={() => router.back()}>
-                        Back to Dashboard
-                    </Button>
-                    <Title level={2} className='text-center'>Class Detailed Report</Title>
-                </Space>
-                <Space>
-                    <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>
-                        Refresh
-                    </Button>
-                </Space>
-            </div>
-
-            <Card style={{ marginBottom: 24 }}>
-                <Row gutter={24} align="middle">
-                    <Col span={8}>
-                        <Statistic title="Department" value={deptCode} />
-                    </Col>
-                    <Col span={8}>
-                        <Statistic title="Year" value={year} formatter={(value) => String(value)} />
-                    </Col>
-                    <Col span={8}>
-                        <Statistic title="Semester" value={semester} />
-                    </Col>
-                </Row>
-            </Card>
-
-            {error && (
-                <Alert
-                    message="Error"
-                    description={error}
-                    type="error"
-                    showIcon
-                    style={{ marginBottom: 24 }}
-                    closable
-                    onClose={() => setError(null)}
-                />
-            )}
-
-            {loading ? (
-                <div style={{ textAlign: 'center', padding: 50 }}>
-                    <Spin size="large" tip="Loading class data..." />
-                </div>
-            ) : (
-                <Space direction="vertical" size="large" style={{ width: '100%' }}>
-
-                    <Card
-                        title={<Title level={4}>Feedback Analysis (By Category)</Title>}
-                        extra={<Button onClick={() => handleDownloadPDF('feedback')}>Export PDF</Button>}
-                        bordered={false}
-                        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
-                    >
-                        <Table
-                            columns={feedbackColumns}
-                            dataSource={getFeedbackDataSource()}
-                            pagination={false}
-                            scroll={{ x: true }}
-                            bordered
-                            size="middle"
-                        />
-                    </Card>
-
-                    <Card
-                        title={<Title level={4}>Survey Analysis (Course Outcomes)</Title>}
-                        extra={<Button onClick={() => handleDownloadPDF('survey')}>Export PDF</Button>}
-                        bordered={false}
-                        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
-                    >
-                        <Table
-                            columns={surveyColumns}
-                            dataSource={getSurveyDataSource()}
-                            pagination={false}
-                            scroll={{ x: true }}
-                            bordered
-                            size="middle"
-                        />
-                    </Card>
-                </Space>
-            )}
+    const headerContent = (
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Space>
+                <Button icon={<ArrowLeftOutlined />} onClick={() => router.back()} ghost>
+                    Back
+                </Button>
+            </Space>
+            <Title level={3} style={{ color: '#fff', margin: 0 }}>Class Report</Title>
+            <Space>
+                <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading} ghost>
+                    Refresh
+                </Button>
+            </Space>
         </div>
+    )
+
+    return (
+        <AppLayout headerContent={headerContent}>
+            <div style={{ padding: 24, background: UI.COLORS.BACKGROUND, minHeight: '100vh' }}>
+
+                <Card style={{ marginBottom: 24 }}>
+                    <Row gutter={24} align="middle">
+                        <Col span={8}>
+                            <Statistic title="Department" value={deptCode} />
+                        </Col>
+                        <Col span={8}>
+                            <Statistic title="Year" value={year} formatter={(value) => String(value)} />
+                        </Col>
+                        <Col span={8}>
+                            <Statistic title="Semester" value={semester} />
+                        </Col>
+                    </Row>
+                </Card>
+
+
+
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: 50 }}>
+                        <Spin size="large" tip="Loading class data..." />
+                    </div>
+                ) : (
+                    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+
+                        <Card
+                            title={<Title level={4}>Feedback Analysis (By Category)</Title>}
+                            extra={<Button onClick={() => handleDownloadPDF('feedback')}>Export PDF</Button>}
+                            bordered={false}
+                            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+                        >
+                            <Table
+                                columns={feedbackColumns}
+                                dataSource={getFeedbackDataSource()}
+                                pagination={false}
+                                scroll={{ x: true }}
+                                bordered
+                                size="middle"
+                            />
+                        </Card>
+
+                        <Card
+                            title={<Title level={4}>Survey Analysis (Course Outcomes)</Title>}
+                            extra={<Button onClick={() => handleDownloadPDF('survey')}>Export PDF</Button>}
+                            bordered={false}
+                            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+                        >
+                            <Table
+                                columns={surveyColumns}
+                                dataSource={getSurveyDataSource()}
+                                pagination={false}
+                                scroll={{ x: true }}
+                                bordered
+                                size="middle"
+                            />
+                        </Card>
+                    </Space>
+                )}
+            </div>
+        </AppLayout>
     )
 }
 

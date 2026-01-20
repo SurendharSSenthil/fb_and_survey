@@ -10,9 +10,9 @@ export const UI = {
     WARNING: '#faad14',
     ERROR: '#ff4d4f',
     BACKGROUND: '#f5f5f5',
-    FOOTER_BG: '#f0f0f0'
+    FOOTER_BG: '#ffffffff'
   },
-  
+
   // Spacing
   SPACING: {
     XS: 4,
@@ -22,7 +22,7 @@ export const UI = {
     XL: 32,
     XXL: 40
   },
-  
+
   // Breakpoints (matching Ant Design)
   BREAKPOINTS: {
     XS: 480,
@@ -32,7 +32,7 @@ export const UI = {
     XL: 1200,
     XXL: 1600
   },
-  
+
   // Font Sizes
   FONT_SIZES: {
     XS: '11px',
@@ -43,7 +43,7 @@ export const UI = {
     XXL: '20px',
     TITLE: '24px'
   },
-  
+
   // Layout
   LAYOUT: {
     MAX_WIDTH: {

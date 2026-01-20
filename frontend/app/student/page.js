@@ -2,27 +2,28 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Layout, Select, Button, Card, Space, Typography, Alert, Spin, Row, Col, Tag, InputNumber } from 'antd'
+import { Layout, Select, Button, Card, Space, Typography, Alert, Spin, Row, Col, Tag, InputNumber, message } from 'antd'
 import { CheckCircleOutlined, FileTextOutlined, MessageOutlined, LogoutOutlined } from '@ant-design/icons'
 import api from '../../lib/api'
 import { getStudentSession, saveStudentSession, clearStudentSession, isSessionExpired } from '../../lib/utils'
-import { 
-  Routes, 
-  API_ENDPOINTS, 
-  STORAGE_KEYS, 
-  Messages, 
-  SubmissionStatus, 
-  UI, 
-  CSS_CLASSES 
+import {
+  Routes,
+  API_ENDPOINTS,
+  STORAGE_KEYS,
+  Messages,
+  SubmissionStatus,
+  UI,
+  CSS_CLASSES
 } from '../../lib/constants/index.js'
 
-const { Header, Content, Footer } = Layout
+import AppLayout from '../../components/AppLayout'
+
 const { Title, Text } = Typography
 
-export default function StudentPage () {
+export default function StudentPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+
 
   // Department, Year, Semester
   const [departments, setDepartments] = useState([])
@@ -77,7 +78,7 @@ export default function StudentPage () {
       const response = await api.get(API_ENDPOINTS.DEPARTMENTS.ACTIVE)
       setDepartments(response.data)
     } catch (err) {
-      setError(err.message || Messages.ERROR_GENERIC)
+      message.error(err.message || Messages.ERROR_GENERIC)
     } finally {
       setLoading(false)
     }
@@ -85,13 +86,12 @@ export default function StudentPage () {
 
   const handleGenerateId = async () => {
     if (!selectedDept) {
-      setError(Messages.STUDENT_SELECT_DEPT)
+      message.error(Messages.STUDENT_SELECT_DEPT)
       return
     }
 
     try {
       setLoading(true)
-      setError(null)
 
       // Generate student ID
       const response = await api.post(API_ENDPOINTS.STUDENT.GENERATE_ID, {
@@ -108,7 +108,7 @@ export default function StudentPage () {
       // Load courses
       await loadCourses(newStudentId, selectedDept, selectedYear, selectedSemester)
     } catch (err) {
-      setError(err.message || Messages.ERROR_GENERIC)
+      message.error(err.message || Messages.ERROR_GENERIC)
     } finally {
       setLoading(false)
     }
@@ -129,7 +129,7 @@ export default function StudentPage () {
       setCourses(coursesRes.data)
       setCourseStatus(statusRes.data)
     } catch (err) {
-      setError(err.message || 'Failed to load courses')
+      message.error(err.message || 'Failed to load courses')
     } finally {
       setLoading(false)
     }
@@ -152,43 +152,24 @@ export default function StudentPage () {
   // Show department selection if no session
   if (!studentId) {
     return (
-      <Layout style={{ minHeight: '100vh', background: UI.COLORS.BACKGROUND }}>
-        <Header style={{ 
-          background: UI.COLORS.PRIMARY, 
-          padding: `0 ${UI.SPACING.MD}px`,
-          display: 'flex',
-          alignItems: 'center'
-        }}>
-          <Title level={3} className={CSS_CLASSES.STUDENT_HEADER_TITLE} style={{ color: '#fff', margin: 0, fontSize: UI.FONT_SIZES.XXL }}>
-            {Messages.SYSTEM_NAME}
-          </Title>
-        </Header>
-        <Content className={CSS_CLASSES.STUDENT_CONTENT} style={{ 
-          padding: `${UI.SPACING.LG}px ${UI.SPACING.MD}px`,
+      <AppLayout>
+        <div className={CSS_CLASSES.STUDENT_CONTENT} style={{
           maxWidth: UI.LAYOUT.MAX_WIDTH.NARROW,
           margin: '0 auto',
           width: '100%'
         }}>
           <Card style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-            <Text style={{ 
-              display: 'block', 
-              textAlign: 'center', 
-              color: '#666', 
+            <Text style={{
+              display: 'block',
+              textAlign: 'center',
+              color: '#666',
               marginBottom: UI.SPACING.LG,
               fontSize: UI.FONT_SIZES.MD
             }}>
               {Messages.STUDENT_SELECT_INFO}
             </Text>
 
-            {error && (
-              <Alert
-                message={error}
-                type='error'
-                closable
-                onClose={() => setError(null)}
-                style={{ marginBottom: 16 }}
-              />
-            )}
+
 
             <Space direction='vertical' style={{ width: '100%' }} size='middle'>
               <div>
@@ -267,73 +248,53 @@ export default function StudentPage () {
               </Button>
             </Space>
           </Card>
-        </Content>
-        <Footer style={{ textAlign: 'center', background: UI.COLORS.FOOTER_BG, padding: `${UI.SPACING.SM}px` }}>
-          <Text type='secondary' style={{ fontSize: UI.FONT_SIZES.SM }}>
-            {Messages.SYSTEM_NAME}
-          </Text>
-        </Footer>
-      </Layout>
+        </div>
+      </AppLayout >
     )
   }
 
+  // Header Content for Student
+  const headerContent = (
+    <>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <Title level={3} className={CSS_CLASSES.STUDENT_HEADER_TITLE} style={{
+          color: '#fff',
+          margin: 0,
+          fontSize: UI.FONT_SIZES.XL,
+          marginBottom: `${UI.SPACING.XS}px`
+        }}>
+          {Messages.SYSTEM_NAME}
+        </Title>
+        <Text type='secondary' className={CSS_CLASSES.STUDENT_HEADER_SUBTITLE} style={{
+          color: 'rgba(255, 255, 255, 0.65)',
+          fontSize: UI.FONT_SIZES.SM,
+          display: 'block'
+        }}>
+          {selectedDept} • {selectedYear} • Semester {selectedSemester}
+        </Text>
+      </div>
+      <Tag color='blue' className={CSS_CLASSES.STUDENT_HEADER_TAG} style={{
+        fontSize: UI.FONT_SIZES.SM,
+        padding: `${UI.SPACING.XS}px ${UI.SPACING.MD}px`,
+        margin: 0,
+        whiteSpace: 'nowrap'
+      }}>
+        ID: {studentId}
+      </Tag>
+
+      <Button icon={<LogoutOutlined />} onClick={handleLogout}>
+        Logout
+      </Button>
+    </>
+  )
+
   // Show courses list
   return (
-    <Layout style={{ minHeight: '100vh', background: UI.COLORS.BACKGROUND }}>
-      <Header style={{ 
-        background: UI.COLORS.PRIMARY, 
-        padding: `0 ${UI.SPACING.MD}px`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: `${UI.SPACING.SM}px`,
-        minHeight: UI.LAYOUT.HEADER_HEIGHT
-      }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Title level={3} className={CSS_CLASSES.STUDENT_HEADER_TITLE} style={{ 
-            color: '#fff', 
-            margin: 0, 
-            fontSize: UI.FONT_SIZES.XL,
-            marginBottom: `${UI.SPACING.XS}px`
-          }}>
-            {Messages.SYSTEM_NAME}
-          </Title>
-          <Text type='secondary' className={CSS_CLASSES.STUDENT_HEADER_SUBTITLE} style={{ 
-            color: 'rgba(255, 255, 255, 0.65)',
-            fontSize: UI.FONT_SIZES.SM,
-            display: 'block'
-          }}>
-            {selectedDept} • {selectedYear} • Semester {selectedSemester}
-          </Text>
-        </div>
-        <Tag color='blue' className={CSS_CLASSES.STUDENT_HEADER_TAG} style={{ 
-          fontSize: UI.FONT_SIZES.SM, 
-          padding: `${UI.SPACING.XS}px ${UI.SPACING.MD}px`,
-          margin: 0,
-          whiteSpace: 'nowrap'
-        }}>
-          ID: {studentId}
-        </Tag>
-
-        <Button icon={<LogoutOutlined />} onClick={handleLogout}>
-          Logout
-        </Button>
-      </Header>
-      <Content className={CSS_CLASSES.STUDENT_CONTENT} style={{ 
-        padding: `${UI.SPACING.MD}px`,
+    <AppLayout headerContent={headerContent}>
+      <div className={CSS_CLASSES.STUDENT_CONTENT} style={{
         width: '100%',
         maxWidth: '100%'
       }}>
-        {error && (
-          <Alert
-            message={error}
-            type='error'
-            closable
-            onClose={() => setError(null)}
-            style={{ marginBottom: 16 }}
-          />
-        )}
 
         {loading && courses.length === 0 ? (
           <Card>
@@ -369,13 +330,13 @@ export default function StudentPage () {
                     }}
                   >
                     <div style={{ marginBottom: 16 }}>
-                      <Title level={4} className='student-card-title' style={{ 
+                      <Title level={4} className='student-card-title' style={{
                         marginBottom: 8,
                         fontSize: '16px'
                       }}>
                         {course.courseCode}
                       </Title>
-                      <Text type='secondary' className='student-card-text' style={{ 
+                      <Text type='secondary' className='student-card-text' style={{
                         fontSize: '13px',
                         display: 'block',
                         wordBreak: 'break-word'
@@ -388,10 +349,10 @@ export default function StudentPage () {
                       {/* Survey Status */}
                       {hasSurvey && (
                         <div>
-                          <div style={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            alignItems: 'center', 
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
                             marginBottom: 8
                           }}>
                             <Space>
@@ -423,10 +384,10 @@ export default function StudentPage () {
                       {/* Feedback Status */}
                       {hasFeedback && (
                         <div>
-                          <div style={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            alignItems: 'center', 
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
                             marginBottom: 8
                           }}>
                             <Space>
@@ -467,16 +428,7 @@ export default function StudentPage () {
             <Alert message={Messages.STUDENT_NO_COURSES} type='info' />
           </Card>
         )}
-      </Content>
-      <Footer style={{ 
-        textAlign: 'center', 
-        background: UI.COLORS.FOOTER_BG, 
-        padding: `${UI.SPACING.SM}px`
-      }}>
-        <Text type='secondary' style={{ fontSize: UI.FONT_SIZES.SM }}>
-          {Messages.SYSTEM_NAME}
-        </Text>
-      </Footer>
-    </Layout>
+      </div>
+    </AppLayout>
   )
 }
