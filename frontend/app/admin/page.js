@@ -12,7 +12,7 @@ const { Header, Content } = Layout
 const { Title, Text } = Typography
 const { Option } = Select
 
-export default function AdminPage () {
+export default function AdminPage() {
   const router = useRouter()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [token, setToken] = useState(null)
@@ -166,11 +166,11 @@ export default function AdminPage () {
 
     Modal.confirm({
       title: 'Delete course?'
-      ,content: 'This will delete the course and its submitted survey/feedback responses.'
-      ,okText: 'Delete'
-      ,okButtonProps: { danger: true }
-      ,cancelText: 'Cancel'
-      ,onOk: async () => {
+      , content: 'This will delete the course and its submitted survey/feedback responses.'
+      , okText: 'Delete'
+      , okButtonProps: { danger: true }
+      , cancelText: 'Cancel'
+      , onOk: async () => {
         try {
           setLoading(true)
           setError(null)
@@ -474,9 +474,23 @@ export default function AdminPage () {
                   <Option value={7}>Semester 7</Option>
                   <Option value={8}>Semester 8</Option>
                 </Select>
-                <Button type='primary' block onClick={handleLoadCourses} loading={loading}>
-                  Show Courses
-                </Button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button type='primary' block onClick={handleLoadCourses} loading={loading}>
+                    Show Courses
+                  </Button>
+                  <Button
+                    block
+                    onClick={() => {
+                      if (selectedDept && selectedYear && selectedSemester) {
+                        router.push(`/admin/class/stats?deptCode=${selectedDept}&year=${selectedYear}&semester=${selectedSemester}`)
+                      } else {
+                        setError('Please select a department, year and semester first')
+                      }
+                    }}
+                  >
+                    Show Stats
+                  </Button>
+                </div>
               </Space>
             </Card>
           </Col>

@@ -343,11 +343,11 @@ router.get('/admin/course/:id/samples', authenticateAdmin, async (req, res, next
 
     // Create PDF
     const doc = new PDFDocument({ margin: 50 })
-    
+
     // Set response headers
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('Content-Disposition', `attachment; filename="course_${course.courseCode}_samples.pdf"`)
-    
+
     // Pipe PDF to response
     doc.pipe(res)
 
@@ -355,11 +355,11 @@ router.get('/admin/course/:id/samples', authenticateAdmin, async (req, res, next
     doc.fontSize(20).font('Helvetica-Bold')
       .text('Course Feedback & Survey Samples', { align: 'center' })
     doc.moveDown()
-    
+
     doc.fontSize(14).font('Helvetica')
       .text(`Course: ${course.courseCode} - ${course.courseName}`, { align: 'center' })
     doc.moveDown()
-    
+
     doc.fontSize(10).font('Helvetica-Oblique')
       .text(`Generated on: ${new Date().toLocaleString()}`, { align: 'center' })
     doc.moveDown(2)
@@ -373,7 +373,7 @@ router.get('/admin/course/:id/samples', authenticateAdmin, async (req, res, next
       surveySamples.forEach((sample, index) => {
         doc.fontSize(12).font('Helvetica-Bold')
           .text(`Sample ${index + 1}`, { underline: true })
-        
+
         doc.fontSize(10).font('Helvetica')
           .text(`Student ID: ${sample.studentId}`)
           .text(`Submitted At: ${new Date(sample.submittedAt).toLocaleString()}`)
@@ -392,7 +392,7 @@ router.get('/admin/course/:id/samples', authenticateAdmin, async (req, res, next
         sample.answers.forEach((answer, ansIndex) => {
           const questionText = questionMap[answer.questionId] || `Question ${answer.questionId}`
           const answerLabel = LikertLabels[answer.value] || `Value ${answer.value}`
-          
+
           doc.fontSize(9).font('Helvetica')
             .text(`${ansIndex + 1}. ${questionText}`, { indent: 20 })
             .font('Helvetica-Bold')
@@ -418,7 +418,7 @@ router.get('/admin/course/:id/samples', authenticateAdmin, async (req, res, next
       feedbackSamples.forEach((sample, index) => {
         doc.fontSize(12).font('Helvetica-Bold')
           .text(`Sample ${index + 1}`, { underline: true })
-        
+
         doc.fontSize(10).font('Helvetica')
           .text(`Student ID: ${sample.studentId}`)
           .text(`Submitted At: ${new Date(sample.submittedAt).toLocaleString()}`)
@@ -437,7 +437,7 @@ router.get('/admin/course/:id/samples', authenticateAdmin, async (req, res, next
         sample.answers.forEach((answer, ansIndex) => {
           const questionText = questionMap[answer.questionId] || `Question ${answer.questionId}`
           const answerLabel = LikertLabels[answer.value] || `Value ${answer.value}`
-          
+
           doc.fontSize(9).font('Helvetica')
             .text(`${ansIndex + 1}. ${questionText}`, { indent: 20 })
             .font('Helvetica-Bold')
@@ -497,11 +497,11 @@ router.get('/admin/course/:id/samples/survey', authenticateAdmin, async (req, re
 
     // Create PDF
     const doc = new PDFDocument({ margin: 50 })
-    
+
     // Set response headers
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('Content-Disposition', `attachment; filename="course_${course.courseCode}_survey_samples.pdf"`)
-    
+
     // Pipe PDF to response
     doc.pipe(res)
 
@@ -509,11 +509,11 @@ router.get('/admin/course/:id/samples/survey', authenticateAdmin, async (req, re
     doc.fontSize(20).font('Helvetica-Bold')
       .text('Course Survey Samples', { align: 'center' })
     doc.moveDown()
-    
+
     doc.fontSize(14).font('Helvetica')
       .text(`Course: ${course.courseCode} - ${course.courseName}`, { align: 'center' })
     doc.moveDown()
-    
+
     doc.fontSize(10).font('Helvetica-Oblique')
       .text(`Generated on: ${new Date().toLocaleString()}`, { align: 'center' })
     doc.moveDown(2)
@@ -527,7 +527,7 @@ router.get('/admin/course/:id/samples/survey', authenticateAdmin, async (req, re
       surveySamples.forEach((sample, index) => {
         doc.fontSize(12).font('Helvetica-Bold')
           .text(`Sample ${index + 1}`, { underline: true })
-        
+
         doc.fontSize(10).font('Helvetica')
           .text(`Student ID: ${sample.studentId}`)
           .text(`Submitted At: ${new Date(sample.submittedAt).toLocaleString()}`)
@@ -546,7 +546,7 @@ router.get('/admin/course/:id/samples/survey', authenticateAdmin, async (req, re
         sample.answers.forEach((answer, ansIndex) => {
           const questionText = questionMap[answer.questionId] || `Question ${answer.questionId}`
           const answerLabel = LikertLabels[answer.value] || `Value ${answer.value}`
-          
+
           doc.fontSize(9).font('Helvetica')
             .text(`${ansIndex + 1}. ${questionText}`, { indent: 20 })
             .font('Helvetica-Bold')
@@ -601,11 +601,11 @@ router.get('/admin/course/:id/samples/feedback', authenticateAdmin, async (req, 
 
     // Create PDF
     const doc = new PDFDocument({ margin: 50 })
-    
+
     // Set response headers
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('Content-Disposition', `attachment; filename="course_${course.courseCode}_feedback_samples.pdf"`)
-    
+
     // Pipe PDF to response
     doc.pipe(res)
 
@@ -613,11 +613,11 @@ router.get('/admin/course/:id/samples/feedback', authenticateAdmin, async (req, 
     doc.fontSize(20).font('Helvetica-Bold')
       .text('Course Feedback Samples', { align: 'center' })
     doc.moveDown()
-    
+
     doc.fontSize(14).font('Helvetica')
       .text(`Course: ${course.courseCode} - ${course.courseName}`, { align: 'center' })
     doc.moveDown()
-    
+
     doc.fontSize(10).font('Helvetica-Oblique')
       .text(`Generated on: ${new Date().toLocaleString()}`, { align: 'center' })
     doc.moveDown(2)
@@ -631,7 +631,7 @@ router.get('/admin/course/:id/samples/feedback', authenticateAdmin, async (req, 
       feedbackSamples.forEach((sample, index) => {
         doc.fontSize(12).font('Helvetica-Bold')
           .text(`Sample ${index + 1}`, { underline: true })
-        
+
         doc.fontSize(10).font('Helvetica')
           .text(`Student ID: ${sample.studentId}`)
           .text(`Submitted At: ${new Date(sample.submittedAt).toLocaleString()}`)
@@ -650,7 +650,7 @@ router.get('/admin/course/:id/samples/feedback', authenticateAdmin, async (req, 
         sample.answers.forEach((answer, ansIndex) => {
           const questionText = questionMap[answer.questionId] || `Question ${answer.questionId}`
           const answerLabel = LikertLabels[answer.value] || `Value ${answer.value}`
-          
+
           doc.fontSize(9).font('Helvetica')
             .text(`${ansIndex + 1}. ${questionText}`, { indent: 20 })
             .font('Helvetica-Bold')
@@ -759,8 +759,172 @@ router.get('/admin/report', authenticateAdmin, async (req, res, next) => {
   }
 })
 
+// GET /api/admin/report/pdf
+router.get('/admin/report/pdf', authenticateAdmin, async (req, res, next) => {
+  try {
+    const { deptCode, year, semester, type } = req.query
+
+    if (!deptCode || !year || !semester || !type) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'deptCode, year, semester and type are required' }
+      })
+    }
+
+    const courses = await Course.find({
+      deptCode: deptCode.toUpperCase(),
+      year: parseInt(year),
+      semester: parseInt(semester)
+    })
+
+    const reports = await Promise.all(
+      courses.map(async (course) => {
+        const [surveyResponses, feedbackResponses] = await Promise.all([
+          SurveyResponse.find({ courseId: course._id }),
+          FeedbackResponse.find({ courseId: course._id })
+        ])
+
+        const surveyStats = calculateQuestionStats(surveyResponses, course.surveyQuestions)
+        const feedbackStats = calculateQuestionStats(feedbackResponses, course.feedbackQuestions)
+
+        return {
+          courseCode: course.courseCode,
+          courseName: course.courseName,
+          survey: { questionStats: surveyStats },
+          feedback: { questionStats: feedbackStats }
+        }
+      })
+    )
+
+    const doc = new PDFDocument({ margin: 30, layout: 'landscape', size: 'A3' })
+
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="${deptCode}_${year}_Sem${semester}_${type}_Report.pdf"`)
+
+    doc.pipe(res)
+
+    doc.fontSize(20).font('Helvetica-Bold')
+      .text(`Class ${type === 'feedback' ? 'Feedback' : 'Survey'} Report`, { align: 'center' })
+    doc.fontSize(14).font('Helvetica')
+      .text(`${deptCode} - Year ${year} - Semester ${semester}`, { align: 'center' })
+    doc.moveDown(2)
+
+    const { FEEDBACK_CATEGORIES, getCOLabel, getStudentsAbove60, likertToPercentage } = await import('../constants/reportCategories.js')
+
+    if (type === 'feedback') {
+      const startX = 30
+      let currentX = startX
+      const startY = doc.y
+      const colWidth = 100
+      const courseColWidth = 250
+
+      // Headers
+      doc.fontSize(10).font('Helvetica-Bold')
+      doc.text('Course', currentX, startY, { width: courseColWidth })
+      currentX += courseColWidth
+
+      FEEDBACK_CATEGORIES.forEach(cat => {
+        doc.text(cat.name, currentX, startY, { width: colWidth, align: 'center' })
+        currentX += colWidth
+      })
+      doc.moveDown()
+
+      // Rows
+      doc.fontSize(10).font('Helvetica')
+      reports.forEach((report, index) => {
+        const rowY = doc.y
+        currentX = startX
+
+        doc.text(`${report.courseCode}\n${report.courseName}`, currentX, rowY, { width: courseColWidth })
+        currentX += courseColWidth
+
+        FEEDBACK_CATEGORIES.forEach(cat => {
+          let totalScore = 0
+          let questionCount = 0
+
+          cat.questions.forEach(qId => {
+            const stat = report.feedback?.questionStats?.[qId]
+            if (stat) {
+              totalScore += stat.average
+              questionCount++
+            }
+          })
+
+          const average = questionCount > 0 ? (totalScore / questionCount) : 0
+          const percentage = likertToPercentage(average).toFixed(0)
+
+          doc.text(`${average.toFixed(2)}\n(${percentage}%)`, currentX, rowY, { width: colWidth, align: 'center' })
+          currentX += colWidth
+        })
+        doc.moveDown(2)
+      })
+
+    } else if (type === 'survey') {
+      // Determine number of COs
+      let maxCols = 0
+      reports.forEach(r => {
+        if (r.survey.questionStats) {
+          const count = Object.keys(r.survey.questionStats).length
+          if (count > maxCols) maxCols = count
+        }
+      })
+
+      const startX = 30
+      let currentX = startX
+      const startY = doc.y
+      const colWidth = 80
+      const courseColWidth = 150
+
+      // Headers
+      doc.fontSize(10).font('Helvetica-Bold')
+      doc.text('Course', currentX, startY, { width: courseColWidth })
+      currentX += courseColWidth
+
+      for (let i = 0; i < maxCols; i++) {
+        doc.text(getCOLabel(i), currentX, startY, { width: colWidth, align: 'center' })
+        currentX += colWidth
+      }
+      doc.moveDown()
+
+      // Rows
+      doc.fontSize(10).font('Helvetica')
+      reports.forEach((report, index) => {
+        const rowY = doc.y
+        currentX = startX
+
+        doc.text(`${report.courseCode}\n${report.courseName}`, currentX, rowY, { width: courseColWidth })
+        currentX += courseColWidth
+
+        if (report.survey && report.survey.questionStats) {
+          const qIds = Object.keys(report.survey.questionStats).sort()
+
+          for (let i = 0; i < maxCols; i++) {
+            const qId = qIds[i]
+            const stat = qId ? report.survey.questionStats[qId] : null
+
+            if (stat) {
+              const percentage = (stat.average * 20).toFixed(0)
+              const count = getStudentsAbove60(stat.distribution)
+              doc.text(`${percentage}%\n(${count})`, currentX, rowY, { width: colWidth, align: 'center' })
+            } else {
+              doc.text('-', currentX, rowY, { width: colWidth, align: 'center' })
+            }
+            currentX += colWidth
+          }
+        }
+        doc.moveDown(2)
+      })
+    }
+
+    doc.end()
+  } catch (error) {
+    logger.error('Error generating PDF report:', error)
+    next(error)
+  }
+})
+
 // Helper function to calculate question statistics
-function calculateQuestionStats (responses, questions) {
+function calculateQuestionStats(responses, questions) {
   const stats = {}
 
   questions.forEach(question => {
