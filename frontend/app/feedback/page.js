@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Card, Radio, Button, Input, Space, Typography, Alert, Spin, notification } from 'antd'
+import { Card, Radio, Button, Input, Space, Typography, Alert, Spin, notification, message } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import api from '../../lib/api'
 import { getStudentSession } from '../../lib/utils'
@@ -14,14 +14,13 @@ import ResponsiveLayout from '../../components/ResponsiveLayout'
 const { Title, Text } = Typography
 const { TextArea } = Input
 
-export default function FeedbackPage () {
+export default function FeedbackPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const courseId = searchParams.get('courseId')
 
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState(null)
   const [course, setCourse] = useState(null)
   const [answers, setAnswers] = useState({})
   const [recommendation, setRecommendation] = useState('')
@@ -44,24 +43,23 @@ export default function FeedbackPage () {
     if (courseId) {
       loadCourse()
     } else {
-      setError('Course ID is required')
+      message.error('Course ID is required')
     }
   }, [courseId])
 
   const loadCourse = async () => {
     try {
       setLoading(true)
-      setError(null)
 
       // Get course data from localStorage (set when navigating from student page)
       const courseData = JSON.parse(localStorage.getItem(`course_${courseId}`) || 'null')
       if (courseData) {
         setCourse(courseData)
       } else {
-        setError('Course not found. Please go back and try again.')
+        message.error('Course not found. Please go back and try again.')
       }
     } catch (err) {
-      setError(err.message || 'Failed to load course')
+      message.error(err.message || 'Failed to load course')
     } finally {
       setLoading(false)
     }
@@ -71,21 +69,20 @@ export default function FeedbackPage () {
     if (!course || !studentId) return
 
     const unanswered = feedbackQuestions.filter(
-  q => answers[q.questionId] === undefined
-)
+      q => answers[q.questionId] === undefined
+    )
 
-if (unanswered.length > 0) {
-  notification.error({
-    message: 'Incomplete Feedback',
-    description: 'Please answer all questions before submitting.',
-    placement: 'topRight',
-  })
-  return
-}
+    if (unanswered.length > 0) {
+      notification.error({
+        message: 'Incomplete Feedback',
+        description: 'Please answer all questions before submitting.',
+        placement: 'topRight',
+      })
+      return
+    }
 
     try {
       setSubmitting(true)
-      setError(null)
 
       const feedbackAnswersArray = feedbackQuestions.map(q => ({
         questionId: q.questionId,
@@ -101,7 +98,7 @@ if (unanswered.length > 0) {
 
       router.push('/student')
     } catch (err) {
-      setError(err.message || 'Failed to submit feedback')
+      message.error(err.message || 'Failed to submit feedback')
     } finally {
       setSubmitting(false)
     }
@@ -162,15 +159,7 @@ if (unanswered.length > 0) {
           <Text type='secondary' style={{ fontSize: '13px' }}>Feedback Questions</Text>
         </Card>
 
-        {error && (
-          <Alert
-            message={error}
-            type='error'
-            closable
-            onClose={() => setError(null)}
-            style={{ marginBottom: 16 }}
-          />
-        )}
+
 
         <Card>
           <Space direction='vertical' style={{ width: '100%' }} size='middle'>

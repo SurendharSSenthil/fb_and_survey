@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Form, Input, Button, Card, Typography, Alert, Space } from 'antd'
+import { Form, Input, Button, Card, Typography, Space, message } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import api from '../lib/api'
 import { API_ENDPOINTS, STORAGE_KEYS, Messages } from '../lib/constants/index.js'
@@ -13,12 +13,10 @@ const { Title, Text } = Typography
 export default function LoginForm({ userType = 'student', onSuccess }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
 
   const handleSubmit = async (values) => {
     try {
       setLoading(true)
-      setError(null)
 
       const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, values)
 
@@ -42,7 +40,7 @@ export default function LoginForm({ userType = 'student', onSuccess }) {
         }
       }
     } catch (err) {
-      setError(err.message || Messages.ERROR_GENERIC)
+      message.error(err.message || Messages.ERROR_GENERIC)
     } finally {
       setLoading(false)
     }
@@ -58,16 +56,6 @@ export default function LoginForm({ userType = 'student', onSuccess }) {
           Enter your credentials
         </Text>
       </div>
-
-      {error && (
-        <Alert
-          message={error}
-          type="error"
-          closable
-          onClose={() => setError(null)}
-          style={{ marginBottom: 16 }}
-        />
-      )}
 
       <Form
         name="login"

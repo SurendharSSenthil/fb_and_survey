@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { Card, Button, Space, Typography, Alert, Spin, Row, Col, Statistic, Divider, Table, Modal, Input } from 'antd'
+import { Card, Button, Space, Typography, Alert, Spin, Row, Col, Statistic, Divider, Table, Modal, Input, message } from 'antd'
 import { ArrowLeftOutlined, DownloadOutlined, LogoutOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons'
 import api from '../../../lib/api'
 import { LikertLabels } from '../../../lib/constants'
@@ -20,7 +20,6 @@ export default function CourseDetailPage() {
   const [loading, setLoading] = useState(false)
   const [downloadingSurvey, setDownloadingSurvey] = useState(false)
   const [downloadingFeedback, setDownloadingFeedback] = useState(false)
-  const [error, setError] = useState(null)
   const [courseData, setCourseData] = useState(null)
 
   const [isEditQuestionsOpen, setIsEditQuestionsOpen] = useState(false)
@@ -36,7 +35,6 @@ export default function CourseDetailPage() {
   const loadCourseData = async () => {
     try {
       setLoading(true)
-      setError(null)
 
       const token = localStorage.getItem(STORAGE_KEYS.ADMIN_TOKEN)
       if (!token) {
@@ -50,7 +48,7 @@ export default function CourseDetailPage() {
 
       setCourseData(response.data)
     } catch (err) {
-      setError(err.message || Messages.ERROR_GENERIC)
+      message.error(err.message || Messages.ERROR_GENERIC)
     } finally {
       setLoading(false)
     }
@@ -103,7 +101,6 @@ export default function CourseDetailPage() {
   const handleSaveQuestions = async () => {
     try {
       setSavingQuestions(true)
-      setError(null)
 
       const token = localStorage.getItem(STORAGE_KEYS.ADMIN_TOKEN)
       if (!token) {
@@ -124,7 +121,7 @@ export default function CourseDetailPage() {
       setIsEditQuestionsOpen(false)
       await loadCourseData()
     } catch (err) {
-      setError(err.message || Messages.ERROR_GENERIC)
+      message.error(err.message || Messages.ERROR_GENERIC)
     } finally {
       setSavingQuestions(false)
     }
@@ -133,7 +130,6 @@ export default function CourseDetailPage() {
   const handleDownloadSurveySamples = async () => {
     try {
       setDownloadingSurvey(true)
-      setError(null)
 
       const token = localStorage.getItem(STORAGE_KEYS.ADMIN_TOKEN)
       if (!token) {
@@ -168,7 +164,7 @@ export default function CourseDetailPage() {
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch (err) {
-      setError(err.message || 'Failed to download survey samples')
+      message.error(err.message || 'Failed to download survey samples')
     } finally {
       setDownloadingSurvey(false)
     }
@@ -177,7 +173,6 @@ export default function CourseDetailPage() {
   const handleDownloadFeedbackSamples = async () => {
     try {
       setDownloadingFeedback(true)
-      setError(null)
 
       const token = localStorage.getItem(STORAGE_KEYS.ADMIN_TOKEN)
       if (!token) {
@@ -212,7 +207,7 @@ export default function CourseDetailPage() {
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch (err) {
-      setError(err.message || 'Failed to download feedback samples')
+      message.error(err.message || 'Failed to download feedback samples')
     } finally {
       setDownloadingFeedback(false)
     }
@@ -228,7 +223,6 @@ export default function CourseDetailPage() {
       onOk: async () => {
         try {
           setLoading(true)
-          setError(null)
 
           const token = localStorage.getItem(STORAGE_KEYS.ADMIN_TOKEN)
           if (!token) {
@@ -242,7 +236,7 @@ export default function CourseDetailPage() {
 
           router.push(Routes.ADMIN)
         } catch (err) {
-          setError(err.message || 'Failed to delete course')
+          message.error(err.message || 'Failed to delete course')
           setLoading(false)
         }
       }
@@ -494,15 +488,7 @@ export default function CourseDetailPage() {
           </Space>
         </Card>
 
-        {error && (
-          <Alert
-            message={error}
-            type='error'
-            closable
-            onClose={() => setError(null)}
-            style={{ marginBottom: 16 }}
-          />
-        )}
+
 
         {/* Survey Statistics Table */}
         {surveyTableData.length > 0 && (
