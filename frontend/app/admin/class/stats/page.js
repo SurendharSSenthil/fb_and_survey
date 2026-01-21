@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { Layout, Card, Table, Typography, Button, Space, Spin, Row, Col, Statistic, message } from 'antd'
 import { ArrowLeftOutlined, ReloadOutlined, DownloadOutlined } from '@ant-design/icons'
 import api from '../../../../lib/api'
-import { FEEDBACK_CATEGORIES, likertToPercentage, getCOLabel, getStudentsAbove60 } from '../../../../lib/constants/feedbackCategories'
+import { FEEDBACK_CATEGORIES, likertToPercentage, getCOLabel } from '../../../../lib/constants/feedbackCategories'
 import { UI } from '../../../../lib/constants'
 
 import AppLayout from '../../../../components/AppLayout'
@@ -86,9 +86,6 @@ function ClassStatsContent() {
                                     fontSize: 16
                                 }}>
                                     {item.percentage.toFixed(0)}%
-                                </Text>
-                                <Text type="secondary" style={{ fontSize: 11 }}>
-                                    (≥60%: {item.above60})
                                 </Text>
                             </Space>
                         )
@@ -203,8 +200,6 @@ function ClassStatsContent() {
                 courseName: course.courseName,
             }
 
-            // Map Q1->CO1, Q2->CO2, etc. based on sorted keys or explicit IDs if standard
-            // Assuming standard survey questions or sequential ordering
             if (course.survey?.questionStats) {
                 // Sort question IDs to ensure consistent mapping
                 const qIds = Object.keys(course.survey.questionStats).sort()
@@ -214,7 +209,6 @@ function ClassStatsContent() {
                     row[`co${index + 1}`] = {
                         average: stat.average,
                         percentage: stat.average * 20,
-                        above60: ((getStudentsAbove60(stat.distribution) / stat.count) * 100).toFixed(0)
                     }
                 })
             }
