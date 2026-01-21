@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Layout, Card, Table, Typography, Button, Space, Spin, Row, Col, Statistic, message } from 'antd'
-import { ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, ReloadOutlined, DownloadOutlined } from '@ant-design/icons'
 import api from '../../../../lib/api'
 import { FEEDBACK_CATEGORIES, likertToPercentage, getCOLabel, getStudentsAbove60 } from '../../../../lib/constants/feedbackCategories'
 import { UI } from '../../../../lib/constants'
@@ -22,6 +22,7 @@ function ClassStatsContent() {
 
     const [loading, setLoading] = useState(true)
     const [data, setData] = useState([])
+    const [downloadingStats, setDownloadingStats] = useState(false)
     const [surveyColumns, setSurveyColumns] = useState([])
 
     // Verify admin access
@@ -130,6 +131,37 @@ function ClassStatsContent() {
             document.body.removeChild(a)
         } catch (err) {
             message.error(err.message || 'Failed to download PDF')
+        }
+    }
+
+    const handleDownloadStats = async () => {
+        try {
+            setDownloadingStats(true)
+            message.loading({ content: 'Preparing feedback stats CSV...', key: 'exportStats' })
+            const token = localStorage.getItem('adminToken')
+            const response = await fetch(`${api.baseURL || ''}/api/admin/report/stats?deptCode=${deptCode}&year=${year}&semester=${semester}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}))
+                throw new Error(errorData.error?.message || 'Failed to export stats')
+            }
+
+            const blob = await response.blob()
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `feedback_stats_${deptCode}_${year}_Sem${semester}.csv`
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+            message.success({ content: 'Stats exported successfully', key: 'exportStats' })
+        } catch (err) {
+            message.error({ content: err.message || 'Failed to export stats', key: 'exportStats' })
+        } finally {
+            setDownloadingStats(false)
         }
     }
 
@@ -272,7 +304,18 @@ function ClassStatsContent() {
 
                         <Card
                             title={<Title level={4}>Feedback Analysis (By Category)</Title>}
-                            extra={<Button onClick={() => handleDownloadPDF('feedback')}>Export PDF</Button>}
+                            extra={
+                                <Space>
+                                    <Button
+                                        icon={<DownloadOutlined />}
+                                        onClick={handleDownloadStats}
+                                        loading={downloadingStats}
+                                    >
+                                        Export Stats
+                                    </Button>
+                                    <Button onClick={() => handleDownloadPDF('feedback')}>Export PDF</Button>
+                                </Space>
+                            }
                             bordered={false}
                             style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
                         >

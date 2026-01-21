@@ -1119,7 +1119,111 @@ router.get('/admin/report/pdf', authenticateAdmin, async (req, res, next) => {
   }
 })
 
-// Helper function to calculate question statistics
+// GET /api/admin/report/stats
+router.get('/admin/report/stats', authenticateAdmin, async (req, res, next) => {
+  try {
+    const { deptCode, year, semester } = req.query
+
+    if (!deptCode || !year || !semester) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'deptCode, year, and semester are required' }
+      })
+    }
+
+    const courses = await Course.find({
+      deptCode: deptCode.toUpperCase(),
+      year: parseInt(year),
+      semester: parseInt(semester)
+    }).sort({ courseCode: 1 })
+
+    const FEEDBACK_CATEGORIES = [
+      { id: 'CAT1', name: 'Planning & Organisation', questions: ['FQ1', 'FQ2', 'FQ3', 'FQ4', 'FQ5'] },
+      { id: 'CAT2', name: 'Communication & Presentation', questions: ['FQ6', 'FQ7', 'FQ8', 'FQ9', 'FQ10'] },
+      { id: 'CAT3', name: 'Student Participation', questions: ['FQ11', 'FQ12', 'FQ13', 'FQ14', 'FQ15'] },
+      { id: 'CAT4', name: 'Class Management', questions: ['FQ16', 'FQ17', 'FQ18', 'FQ19', 'FQ20'] }
+    ]
+
+    const csvRows = []
+
+    // CSV Header
+    const header = [
+      'Course Code',
+      'Course Name',
+      'Total Feedback',
+      'Planning Score', 'Planning %',
+      'Communication Score', 'Communication %',
+      'Participation Score', 'Participation %',
+      'Management Score', 'Management %',
+      'Overall Score', 'Overall %'
+    ]
+    csvRows.push(header.join(','))
+
+    await Promise.all(
+      courses.map(async (course) => {
+        const feedbackResponses = await FeedbackResponse.find({ courseId: course._id })
+        const totalStudents = feedbackResponses.length
+
+        // Calculate basic stats for all questions
+        const questionStats = calculateQuestionStats(feedbackResponses, course.feedbackQuestions)
+
+        const row = [
+          `"${course.courseCode}"`,
+          `"${course.courseName}"`,
+          totalStudents
+        ]
+
+        let overallSum = 0
+        let overallMaxScore = 0
+
+        // Calculate Stats for each Category
+        FEEDBACK_CATEGORIES.forEach(category => {
+          let categorySum = 0
+
+          category.questions.forEach(qId => {
+            if (questionStats[qId]) {
+              categorySum += (questionStats[qId].sum || 0)
+            }
+          })
+
+          // Max score for this category = Students * Questions * 5
+          const categoryMaxScore = totalStudents * category.questions.length * 5
+          const categoryPercentage = (totalStudents > 0 && categoryMaxScore > 0)
+            ? ((categorySum / categoryMaxScore) * 100).toFixed(2)
+            : '0.00'
+
+          row.push(categorySum)
+          row.push(`${categoryPercentage}%`)
+
+          overallSum += categorySum
+          overallMaxScore += categoryMaxScore
+        })
+
+        const overallPercentage = (totalStudents > 0 && overallMaxScore > 0)
+          ? ((overallSum / overallMaxScore) * 100).toFixed(2)
+          : '0.00'
+
+        row.push(overallSum)
+        row.push(`${overallPercentage}%`)
+
+        csvRows.push(row.join(','))
+      })
+    )
+
+    // Join rows with newline
+    const csvString = csvRows.join('\n')
+
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', `attachment; filename=feedback_stats_${deptCode}_${year}_${semester}.csv`)
+
+    res.send(csvString)
+
+  } catch (error) {
+    logger.error('Error generating stats CSV:', error)
+    next(error)
+  }
+})
+
 function calculateQuestionStats(responses, questions) {
   const stats = {}
 
@@ -1149,6 +1253,7 @@ function calculateQuestionStats(responses, questions) {
 
     stats[question.questionId] = {
       questionText: question.text,
+      sum,
       average: parseFloat(average.toFixed(2)),
       count: questionResponses.length,
       distribution
@@ -1159,4 +1264,3 @@ function calculateQuestionStats(responses, questions) {
 }
 
 export default router
-
