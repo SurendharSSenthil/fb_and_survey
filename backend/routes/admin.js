@@ -841,7 +841,7 @@ router.get('/admin/report/pdf', authenticateAdmin, async (req, res, next) => {
       .font('Helvetica')
       .fontSize(13)
       .text(
-        `${deptCode.toUpperCase()} • Academic Year ${year} • Semester ${semester}`,
+        `${deptCode.toUpperCase()} • Year of Passing ${year} • Semester ${semester}`,
         0,
         60,
         { width: pageWidth, align: 'center' }
@@ -860,7 +860,7 @@ router.get('/admin/report/pdf', authenticateAdmin, async (req, res, next) => {
       .fillColor('#333')
       .fontSize(10)
       .text(`Department : ${deptCode.toUpperCase()}`, 30)
-      .text(`Year : ${year}`)
+      .text(`Year of Passing: ${year}`)
       .text(`Semester : ${semester}`)
 
     doc
@@ -889,11 +889,15 @@ router.get('/admin/report/pdf', authenticateAdmin, async (req, res, next) => {
     if (type === 'feedback') {
       const startX = 30
       const courseColWidth = 260
+
+      // +1 for "Overall Avg"
+      const totalCols = FEEDBACK_CATEGORIES.length + 1
       const remainingWidth = usableWidth - courseColWidth
-      const colWidth = remainingWidth / FEEDBACK_CATEGORIES.length
+      const colWidth = remainingWidth / totalCols
 
       let y = doc.y
 
+      /* ---------- Header Row ---------- */
       doc.rect(startX, y - 4, usableWidth, 22).fill('#E3F2FD')
       doc.fillColor('#0D47A1').font('Helvetica-Bold').fontSize(10)
 
@@ -905,9 +909,13 @@ router.get('/admin/report/pdf', authenticateAdmin, async (req, res, next) => {
         x += colWidth
       })
 
+      // Overall Average header
+      doc.text('Overall Avg', x, y, { width: colWidth, align: 'center' })
+
       doc.moveDown(1.5)
       doc.font('Helvetica').fontSize(9)
 
+      /* ---------- Data Rows ---------- */
       reports.forEach((report, index) => {
         const rowY = doc.y
         let cx = startX
@@ -918,13 +926,16 @@ router.get('/admin/report/pdf', authenticateAdmin, async (req, res, next) => {
 
         doc.fillColor('#000')
         doc.text(
-          `${report.courseCode}\n${report.courseName}`,
+          `${report.courseCode}\n${report.courseName.toUpperCase()}`,
           cx + 5,
           rowY,
           { width: courseColWidth }
         )
 
         cx += courseColWidth
+
+        let overallTotal = 0
+        let overallCount = 0
 
         FEEDBACK_CATEGORIES.forEach(cat => {
           let total = 0
@@ -939,10 +950,15 @@ router.get('/admin/report/pdf', authenticateAdmin, async (req, res, next) => {
           })
 
           const avg = count ? total / count : 0
-          const pct = likertToPercentage(avg).toFixed(0)
+          const pct = likertToPercentage(avg)
+
+          if (count) {
+            overallTotal += avg
+            overallCount++
+          }
 
           doc.text(
-            `${pct}%`,
+            `${pct.toFixed(0)}%`,
             cx,
             rowY + 6,
             { width: colWidth, align: 'center' }
@@ -951,9 +967,24 @@ router.get('/admin/report/pdf', authenticateAdmin, async (req, res, next) => {
           cx += colWidth
         })
 
+        /* ---------- Overall Average Cell ---------- */
+        const overallAvg = overallCount ? overallTotal / overallCount : 0
+        const overallPct = likertToPercentage(overallAvg)
+
+        doc
+          .font('Helvetica-Bold')
+          .text(
+            `${overallPct.toFixed(0)}%`,
+            cx,
+            rowY + 6,
+            { width: colWidth, align: 'center' }
+          )
+          .font('Helvetica')
+
         doc.moveDown(2)
       })
     }
+
 
     /* ================= SURVEY TABLE ================= */
 
@@ -1010,7 +1041,6 @@ router.get('/admin/report/pdf', authenticateAdmin, async (req, res, next) => {
           const stat = report.survey.questionStats[qIds[i]]
 
           if (stat) {
-            const pct = (stat.average * 20).toFixed(0)
             const count = (getStudentsAbove60(stat.distribution) / (stat.count) * 100).toFixed(0)
             doc.text(
               `${count}%`,
