@@ -34,6 +34,7 @@ export default function AdminPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedSemester, setSelectedSemester] = useState(1)
   const [downloadingSurvey, setDownloadingSurvey] = useState({})
+  const [downloadingSurveyResult, setDownloadingSurveyResult] = useState({})
   const [downloadingFeedback, setDownloadingFeedback] = useState({})
   const [hasSearched, setHasSearched] = useState(false)
 
@@ -247,6 +248,45 @@ export default function AdminPage() {
       message.error(err.message || 'Failed to download feedback samples')
     } finally {
       setDownloadingFeedback(prev => ({ ...prev, [courseId]: false }))
+    }
+  }
+
+  const handleDownloadSurveyResult = async (courseId, courseCode, e) => {
+    e.stopPropagation()
+    try {
+      setDownloadingSurveyResult(prev => ({ ...prev, [courseId]: true }))
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      const response = await fetch(`${API_URL}/api/admin/survey/export-result?courseId=${courseId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        try {
+          const jsonError = JSON.parse(errorData)
+          throw new Error(jsonError.error?.message || 'Failed to download survey result')
+        } catch {
+          throw new Error('Failed to download survey result')
+        }
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `survey_result_${courseCode}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      message.success('Survey result exported successfully')
+    } catch (err) {
+      message.error(err.message || 'Failed to download survey result')
+    } finally {
+      setDownloadingSurveyResult(prev => ({ ...prev, [courseId]: false }))
     }
   }
 
@@ -543,6 +583,16 @@ export default function AdminPage() {
                             block
                           >
                             Survey Samples
+                          </Button>
+                          <Button
+                            type='default'
+                            size='small'
+                            icon={<DownloadOutlined />}
+                            onClick={(e) => handleDownloadSurveyResult(course.courseId, course.courseCode, e)}
+                            loading={downloadingSurveyResult[course.courseId]}
+                            block
+                          >
+                            Survey Result
                           </Button>
                           <Button
                             type='default'

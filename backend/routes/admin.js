@@ -1263,4 +1263,63 @@ function calculateQuestionStats(responses, questions) {
   return stats
 }
 
+// GET /api/admin/survey/export-result
+router.get('/admin/survey/export-result', authenticateAdmin, async (req, res, next) => {
+  try {
+    const { courseId } = req.query
+
+    if (!courseId) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'courseId is required' }
+      })
+    }
+
+    const course = await Course.findById(courseId)
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        error: { message: 'Course not found' }
+      })
+    }
+
+    const responses = await SurveyResponse.find({ courseId }).sort({ studentId: 1 })
+
+    // Generate CSV
+
+    // Check question count to determine CO headers
+    const coCount = course.surveyQuestions.length
+    const coHeaders = Array.from({ length: coCount }, (_, i) => `CO${i + 1}`)
+
+    const header = ['Random Number', ...coHeaders]
+    const rows = [header.join(',')]
+
+    responses.forEach(response => {
+      const row = [response.studentId]
+
+      // Calculate score for each question
+      // answer value is 1-5. Score = value * 20.
+      course.surveyQuestions.forEach((q, index) => {
+        // Find answer for this question
+        const answer = response.answers.find(a => a.questionId === q.questionId)
+        const score = answer ? (answer.value * 20) : 0
+        row.push(score)
+      })
+
+      rows.push(row.join(','))
+    })
+
+    const csvString = rows.join('\n')
+
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', `attachment; filename=survey_result_${course.courseCode}.csv`)
+
+    res.send(csvString)
+
+  } catch (error) {
+    logger.error('Error exporting survey result:', error)
+    next(error)
+  }
+})
+
 export default router
